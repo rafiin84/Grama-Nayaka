@@ -1,0 +1,9 @@
+import { chromium } from "playwright";
+const base = process.env.BASE ?? "http://localhost:3111";
+const routes = ["/", "/register", "/apply", "/app", "/app/learning", "/app/learning/C-PR", "/app/learning/lesson/L-PR1", "/app/learning/lesson/L-PR3", "/app/learning/lesson/L-PR4", "/app/community", "/app/grievances", "/app/grievances/G-3001", "/app/grievances/new", "/app/rewards", "/app/training", "/app/events", "/app/events/E-501", "/app/ai", "/app/certificates", "/app/notifications", "/app/profile", "/app/help", "/app/status", "/admin", "/admin/applications", "/admin/participants", "/admin/training", "/admin/training/CL-A1", "/admin/attendance", "/admin/lms", "/admin/records", "/admin/grievances", "/admin/events", "/admin/events/new", "/admin/rewards", "/admin/reports", "/admin/templates", "/admin/audit", "/admin/settings"];
+const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 800 } }); const p = await ctx.newPage(); let bad = 0;
+const errs = []; p.on("pageerror", (e) => errs.push(String(e))); p.on("console", (m) => m.type() === "error" && errs.push(m.text()));
+await p.goto(base); await p.evaluate(() => localStorage.setItem("gn-prefs", JSON.stringify({ state: { lang: "en", role: "state", stage: "lms" }, version: 0 })));
+for (const r of routes) { errs.length = 0; await p.goto(base + r, { waitUntil: "networkidle" }); await p.waitForTimeout(700); const txt = await p.locator("body").innerText(); const h = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2);
+  if (errs.length || /Something went wrong|Permission denied/.test(txt) && !r.startsWith("/app")) { bad++; console.log("FAIL", r, errs.slice(0, 2), /Permission denied/.test(txt) ? "denied" : ""); } else console.log("ok  ", r, h ? "(h-scroll!)" : ""); }
+await b.close(); process.exit(bad ? 1 : 0);

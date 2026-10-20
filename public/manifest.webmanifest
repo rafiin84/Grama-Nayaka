@@ -1,0 +1,1 @@
+{ "name": "Grama Nayaka · ಗ್ರಾಮ ನಾಯಕ", "short_name": "Grama Nayaka", "start_url": "/", "display": "standalone", "background_color": "#FBF8F1", "theme_color": "#116149", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }] }
