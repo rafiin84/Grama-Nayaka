@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getDb, nid, now, inScope, roleUsers, useDb } from "./db";
 import type * as T from "./types";
+import type { DbData } from "./db";
 import { usePrefs } from "./store";
 import { ME } from "./seed";
 
@@ -36,6 +37,18 @@ export function useAct() {
   };
 }
 
+
+const complete = (a?: [T.AttStatus, T.AttStatus]) => !!a && a.every((x) => x === "Present" || x === "Late");
+/** Keeps derived training state in step with attendance: participant completion and class status. */
+const syncTraining = (s: DbData) => {
+  s.participants.forEach((p) => { p.trainingDone = s.classes.some((c) => c.roster.includes(p.id) && complete(c.attendance[p.id])); });
+  s.classes.forEach((c) => {
+    if (c.status === "Cancelled") return;
+    const rec = c.roster.flatMap((p) => c.attendance[p] ?? []);
+    c.status = rec.length && rec.every((a) => a !== "Not Recorded") ? "Completed" : rec.some((a) => a !== "Not Recorded") ? "In Progress" : "Scheduled";
+  });
+};
+
 export const api = {
   applications: {
     saveDraft: (d: Record<string, unknown>) => getDb().patch((s) => { s.appDraft = d; }),
@@ -51,7 +64,13 @@ export const api = {
     },
     decide: (id: string, status: T.AppStatus, note?: string) => {
       const before = getDb().applications.find((a) => a.id === id)?.status;
-      getDb().patch((s) => { const a = s.applications.find((x) => x.id === id)!; a.status = status; a.history.push({ status, at: now().slice(0, 10), by: actor() }); if (note) a.internalNotes.push(note); });
+      getDb().patch((s) => {
+        const a = s.applications.find((x) => x.id === id)!; a.status = status; a.history.push({ status, at: now().slice(0, 10), by: actor() }); if (note) a.internalNotes.push(note);
+        if (status === "Approved" && !s.participants.some((p) => p.appId === id)) {
+          const n = Math.max(1039, ...s.participants.map((p) => Number(p.id.slice(2)))) + 1;
+          s.participants.push({ id: `P-${n}`, appId: id, name: a.name, district: a.district, ac: a.ac, taluk: a.taluk, gp: a.gp, trainingDone: false, lmsProgress: 0, points: 0, publicLeaderboard: false, phoneMasked: "+91 ••••• ••••" });
+        }
+      });
       audit("Application decision", "Application", id, before, status);
     },
   },
@@ -89,14 +108,14 @@ export const api = {
     set: (classId: string, pid: string, day: 1 | 2, to: T.AttStatus, reason = "") => {
       const c = getDb().classes.find((x) => x.id === classId)!; const from = c.attendance[pid]?.[day - 1] ?? "Not Recorded";
       if (from !== "Not Recorded" && !reason.trim()) throw new ApiError("A reason is required to correct recorded attendance.");
-      getDb().patch((s) => { const k = s.classes.find((x) => x.id === classId)!; k.attendance[pid][day - 1] = to; k.attendanceLog.push({ at: now(), by: actor(), pid, day, from, to, reason }); });
+      getDb().patch((s) => { const k = s.classes.find((x) => x.id === classId)!; k.attendance[pid][day - 1] = to; k.attendanceLog.push({ at: now(), by: actor(), pid, day, from, to, reason }); syncTraining(s); });
       audit("Attendance edit", "Attendance", `${classId}/${pid}/Day${day}`, from, to);
     },
     bulk: (classId: string, day: 1 | 2, to: T.AttStatus) => {
-      getDb().patch((s) => { const k = s.classes.find((x) => x.id === classId)!; k.roster.forEach((p) => { if (k.attendance[p][day - 1] === "Not Recorded") k.attendance[p][day - 1] = to; }); });
+      getDb().patch((s) => { const k = s.classes.find((x) => x.id === classId)!; k.roster.forEach((p) => { if (k.attendance[p][day - 1] === "Not Recorded") k.attendance[p][day - 1] = to; }); syncTraining(s); });
       audit("Attendance bulk mark", "Attendance", `${classId}/Day${day}`, "Not Recorded", to);
     },
-    completes: (a?: [T.AttStatus, T.AttStatus]) => !!a && a.every((x) => x === "Present" || x === "Late"),
+    completes: complete,
   },
   lms: {
     enroll: (courseId: string) => { getDb().patch((s) => { if (!s.enrolled.includes(courseId)) s.enrolled.push(courseId); }); },
