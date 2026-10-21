@@ -37,7 +37,7 @@ function ProfileMenu() {
     <div className="relative">
       <button aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-sm">
         <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-fg">{actorName(role)[0]}</span>
-        <span className="hidden sm:inline">{actorName(role)}</span>
+        <span className="hidden sm:inline md:hidden xl:inline">{actorName(role)}</span>
       </button>
       {open && (
         <div role="menu" className="absolute right-0 z-40 mt-2 w-72 rounded-2xl border border-border bg-card p-3 shadow-lg">
@@ -68,7 +68,7 @@ function SearchBox() {
     return r.slice(0, 7);
   }, [q, nav, people, apps, courses, role, lang]);
   return (
-    <div className="relative hidden w-64 md:block">
+    <div className="relative hidden w-40 md:block lg:w-56 xl:w-64">
       <label className="sr-only" htmlFor="gsearch">Search</label>
       <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5"><Ph.MagnifyingGlass size={16} /><input id="gsearch" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("Search…", "ಹುಡುಕಿ…")} className="w-full bg-transparent text-sm outline-none" /></div>
       {results.length > 0 && <ul className="absolute z-40 mt-1 w-full rounded-xl border border-border bg-card p-1 shadow-lg">{results.map((r) => <li key={r.href + r.label}><button className="w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-accent-soft" onClick={() => { setQ(""); router.push(r.href); }}>{r.label}</button></li>)}</ul>}
@@ -96,13 +96,13 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="min-h-screen md:flex">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-card focus:p-2">Skip to content</a>
       {/* desktop sidebar */}
-      <aside className={cn("no-print sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-card p-3 md:flex", collapsed ? "w-[68px]" : "w-64")}>
-        <div className="mb-4 flex items-center justify-between px-1"><Link href="/" className="font-bold text-primary">{collapsed ? "GN" : t.appName}</Link><button aria-label="Collapse sidebar" onClick={() => setCollapsed(!collapsed)} className="rounded-full p-1 hover:bg-accent-soft"><Ph.SidebarSimple size={18} /></button></div>
+      <aside className={cn("no-print sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-card p-3 md:flex", collapsed ? "w-[68px]" : "w-[68px] lg:w-64")}>
+        <div className="mb-4 flex items-center justify-between px-1"><Link href="/" className="font-bold text-primary"><span className={collapsed ? "" : "lg:hidden"}>GN</span>{!collapsed && <span className="hidden lg:inline">{t.appName}</span>}</Link><button aria-label="Collapse sidebar" onClick={() => setCollapsed(!collapsed)} className="rounded-full p-1 hover:bg-accent-soft"><Ph.SidebarSimple size={18} /></button></div>
         <nav aria-label="Primary" className="flex-1 space-y-0.5 overflow-y-auto">
           {nav.map((n, i) => { const active = n.href === path || (n.href !== "/app" && n.href !== "/admin" && path.startsWith(n.href)); const split = n.group && i > 0 && nav[i - 1].group !== n.group; return (
-            <div key={n.href}>{split && <div className="mx-3 my-2 border-t border-border" />}<Link href={n.href} title={label(n)} aria-current={active ? "page" : undefined} className={cn("flex items-center gap-3 rounded-xl px-3 py-2 text-sm", active ? "bg-accent-soft font-semibold text-primary" : "text-muted hover:bg-accent-soft")}><Icon name={n.icon} size={20} weight={active ? "fill" : "regular"} />{!collapsed && label(n)}</Link></div>); })}
+            <div key={n.href}>{split && <div className="mx-3 my-2 border-t border-border" />}<Link href={n.href} title={label(n)} aria-current={active ? "page" : undefined} className={cn("flex items-center gap-3 rounded-xl px-3 py-2 text-sm", active ? "bg-accent-soft font-semibold text-primary" : "text-muted hover:bg-accent-soft")}><Icon name={n.icon} size={20} weight={active ? "fill" : "regular"} />{!collapsed && <span className="hidden lg:inline">{label(n)}</span>}</Link></div>); })}
         </nav>
-        {!collapsed && <p className="mt-2 rounded-lg bg-saffron/15 p-2 text-[11px] text-foreground">{t.demoBanner}</p>}
+        {!collapsed && <p className="mt-2 hidden rounded-lg bg-saffron/15 lg:block p-2 text-[11px] text-foreground">{t.demoBanner}</p>}
       </aside>
 
       <div className="min-w-0 flex-1">
@@ -110,7 +110,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <header className="no-print sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/90 px-3 py-2 backdrop-blur md:px-6">
           {!isP && <button aria-label="Menu" className="rounded-full p-2 md:hidden" onClick={() => setDrawer(true)}><Ph.List size={22} /></button>}
           <Link href="/" className={cn("font-bold text-primary md:hidden", !isP && "hidden sm:block")}>{t.appName}</Link>
-          {!isP && <ScopeSwitcher className="hidden max-w-[22rem] md:block" />}
+          {!isP && <ScopeSwitcher className="hidden max-w-[12rem] md:block xl:max-w-[22rem]" />}
           <div className="flex-1" />
           <SearchBox />
           <LangSwitch /><ThemeToggle />
