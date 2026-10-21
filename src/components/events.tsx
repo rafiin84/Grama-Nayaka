@@ -7,28 +7,27 @@ import { toast } from "sonner";
 import { Badge, Button, Card, Confirm, DemoNote, Empty, Field, Input, Modal, PageHeader, QState, Select, Tabs, Textarea, statusTone } from "@/components/ui";
 import { api, useAct, useMock } from "@/lib/api";
 import { getDb } from "@/lib/db";
-import { usePrefs } from "@/lib/store";
+import { useCan } from "@/lib/useCan";
 import { useT } from "@/lib/useT";
 import { ME, participants } from "@/lib/seed";
 import { districts } from "@/lib/seed-geo";
 import type { EventItem } from "@/lib/types";
 
-const canManage = (r: string) => r !== "participant" && r !== "trainer";
 export function EventList({ admin }: { admin?: boolean }) {
-  const { tr, loc } = useT(); const role = usePrefs((s) => s.role); const base = admin ? "/admin/events" : "/app/events";
+  const { tr, loc } = useT(); const { can } = useCan(); const base = admin ? "/admin/events" : "/app/events";
   const [tab, setTab] = useState<"Upcoming" | "Past" | "Draft">("Upcoming"); const [cat, setCat] = useState(""); const [dist, setDist] = useState("");
   const q = useMock(["events"], () => getDb().events);
-  return (<div className="space-y-4"><PageHeader title={tr("Events", "ಕಾರ್ಯಕ್ರಮಗಳು")} actions={canManage(role) && admin ? <Link href="/admin/events/new"><Button><Plus />{tr("Create event", "ಕಾರ್ಯಕ್ರಮ ರಚಿಸಿ")}</Button></Link> : undefined} />
-    <Tabs tabs={(["Upcoming", "Past", ...(canManage(role) ? ["Draft"] : [])] as ("Upcoming" | "Past" | "Draft")[]).map((x) => ({ id: x, label: x === "Upcoming" ? tr("Upcoming", "ಮುಂಬರುವ") : x === "Past" ? tr("Past", "ಹಿಂದಿನ") : tr("Draft", "ಕರಡು") }))} value={tab} onChange={setTab} />
+  return (<div className="space-y-4"><PageHeader title={tr("Events", "ಕಾರ್ಯಕ್ರಮಗಳು")} actions={can("events", "create") && admin ? <Link href="/admin/events/new"><Button><Plus />{tr("Create event", "ಕಾರ್ಯಕ್ರಮ ರಚಿಸಿ")}</Button></Link> : undefined} />
+    <Tabs tabs={(["Upcoming", "Past", ...(can("events", "edit") ? ["Draft"] : [])] as ("Upcoming" | "Past" | "Draft")[]).map((x) => ({ id: x, label: x === "Upcoming" ? tr("Upcoming", "ಮುಂಬರುವ") : x === "Past" ? tr("Past", "ಹಿಂದಿನ") : tr("Draft", "ಕರಡು") }))} value={tab} onChange={setTab} />
     <div className="grid gap-2 sm:grid-cols-3"><Select aria-label="Type" value={cat} onChange={(e) => setCat(e.target.value)}><option value="">{tr("All types", "ಎಲ್ಲಾ ವಿಧ")}</option>{["Workshop", "Online", "Meet", "Review"].map((c) => <option key={c}>{c}</option>)}</Select><Select aria-label="District" value={dist} onChange={(e) => setDist(e.target.value)}><option value="">{tr("All districts", "ಎಲ್ಲಾ ಜಿಲ್ಲೆ")}</option>{districts.map((c) => <option key={c}>{c}</option>)}</Select></div>
     <QState q={q}>{(all) => { const list = all.filter((e) => e.status === tab && (!cat || e.category === cat) && (!dist || e.district === dist)); return list.length === 0 ? <Empty title={tr("No events here", "ಇಲ್ಲಿ ಕಾರ್ಯಕ್ರಮಗಳಿಲ್ಲ")} /> : <div className="grid gap-3 md:grid-cols-2">{list.map((e) => { const reg = e.registered.includes(ME); const wl = e.waitlist.includes(ME); return (
       <Link key={e.id} href={`${base}/${e.id}`}><Card className="h-full hover:border-primary"><div className="flex flex-wrap gap-1"><Badge tone="info">{e.category}</Badge><Badge>{e.language === "both" ? "ಕನ್ನಡ + English" : e.language === "kn" ? "ಕನ್ನಡ" : "English"}</Badge>{!admin && (reg ? <Badge tone="success">{tr("Registered", "ನೋಂದಾಯಿಸಿದೆ")}</Badge> : wl ? <Badge tone="warning">{tr("Waitlisted", "ಕಾಯುವ ಪಟ್ಟಿ")}</Badge> : null)}</div><h2 className="mt-2 font-bold">{loc(e.title)}</h2><p className="text-sm text-muted"><CalendarBlank className="inline" /> {e.date} · {e.time}</p><p className="text-sm text-muted">{e.venue} · {e.audience}</p><p className="mt-1 text-xs">{e.registered.length}/{e.capacity} {tr("registered", "ನೋಂದಣಿ")}{e.waitlist.length > 0 && ` · ${e.waitlist.length} ${tr("waitlisted", "ಕಾಯುತ್ತಿದ್ದಾರೆ")}`}</p></Card></Link>); })}</div>; }}</QState></div>);
 }
 
 export function EventDetail({ id, admin }: { id: string; admin?: boolean }) {
-  const { tr, loc } = useT(); const act = useAct(); const role = usePrefs((s) => s.role); const router = useRouter(); const [cancel, setCancel] = useState(false);
+  const { tr, loc } = useT(); const act = useAct(); const { can } = useCan(); const router = useRouter(); const [cancel, setCancel] = useState(false);
   const q = useMock(["event", id], () => getDb().events.find((e) => e.id === id) ?? null);
-  return (<QState q={q} isEmpty={(e) => !e} empty={<Empty title={tr("Event not found", "ಕಾರ್ಯಕ್ರಮ ಸಿಗಲಿಲ್ಲ")} />}>{(e0) => { const e = e0 as EventItem; const reg = e.registered.includes(ME); const wl = e.waitlist.includes(ME); const open = e.status === "Upcoming"; const mgr = canManage(role) && admin;
+  return (<QState q={q} isEmpty={(e) => !e} empty={<Empty title={tr("Event not found", "ಕಾರ್ಯಕ್ರಮ ಸಿಗಲಿಲ್ಲ")} />}>{(e0) => { const e = e0 as EventItem; const reg = e.registered.includes(ME); const wl = e.waitlist.includes(ME); const open = e.status === "Upcoming"; const mgr = can("events", "edit") && admin;
     return (<div className="space-y-4"><PageHeader title={loc(e.title)} sub={`${e.date} · ${e.time} · ${e.venue}`} actions={<Badge tone={statusTone(e.status)}>{e.status}</Badge>} />
       <Card><p>{loc(e.description)}</p><dl className="mt-3 grid grid-cols-2 gap-2 text-sm"><div><dt className="text-muted">{tr("Audience", "ಪ್ರೇಕ್ಷಕರು")}</dt><dd>{e.audience}</dd></div><div><dt className="text-muted">{tr("Capacity", "ಸಾಮರ್ಥ್ಯ")}</dt><dd>{e.registered.length}/{e.capacity} · {e.waitlist.length} {tr("waitlisted", "ಕಾಯುತ್ತಿದ್ದಾರೆ")}</dd></div></dl>
         {e.agenda.length > 0 && <><h2 className="mt-3 font-bold">{tr("Agenda", "ಕಾರ್ಯಸೂಚಿ")}</h2><ol className="list-decimal pl-5 text-sm">{e.agenda.map((a, i) => <li key={i}>{loc(a)}</li>)}</ol></>}</Card>

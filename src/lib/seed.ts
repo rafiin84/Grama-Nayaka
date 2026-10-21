@@ -3,7 +3,7 @@ import type * as T from "./types";
 const d = (s: string) => `2026-${s}`;
 export const ME = "P-1042"; // demo participant
 export const trainers: T.Trainer[] = [
-  { id: "T-1", name: "Savitha Rao" }, { id: "T-2", name: "Manjunath Hegde" }, { id: "T-3", name: "Farah Sultana" },
+  { id: "T-1", name: "Savitha Rao" }, { id: "T-2", name: "Manjunath Hegde" }, { id: "T-3", name: "Farah Sultana" }, { id: "T-4", name: "Lakshmi Nair" }, { id: "T-5", name: "Ravi Shankar" },
 ];
 
 const names = ["Ananya Gowda", "Rahul Naik", "Meghana Shetty", "Kiran Kumar", "Divya Patil", "Suresh Babu", "Pooja Hiremath", "Arjun Reddy", "Lakshmi Devi", "Imran Pasha", "Nandini S", "Vinay Kulkarni"];
@@ -56,7 +56,9 @@ export const classes: T.TrainingClass[] = [
 ];
 // make attendance sample for completed cohort A
 classes.slice(0, 2).forEach((c) => c.roster.forEach((p, i) => { c.attendance[p] = [i === 1 ? "Late" : "Present", "Present"]; }));
+classes.forEach((c) => { c.location = "Mysuru Training Institute (fictional)"; c.duration = 2; c.materials = []; c.certified = []; c.region = "Mysuru"; c.publish = "Published"; c.exceptions = {}; c.description = `Two-day classroom training for Cohort ${c.cohort}: Panchayat Raj basics, ethical fieldwork and grievance follow-up.`; const dl = new Date(c.startDate + "T00:00:00Z"); dl.setUTCDate(dl.getUTCDate() - 3); c.registrationDeadline = dl.toISOString().slice(0, 10); });
 participants.forEach((p) => { const c = classes.find((c) => c.roster.includes(p.id)); if (c) { p.classId = c.id; p.cohort = c.cohort; } });
+classes.slice(0, 2).forEach((c) => { c.certified = [...c.roster]; });
 export const cycle: T.TrainingCycle = { id: "CY-26-01", name: "Cycle 1 · Mysuru", venue: "Mysuru Training Institute (fictional placeholder)", startDate: d("09-14"), status: "In Progress", classIds: classes.map((c) => c.id) };
 
 const lesson = (id: string, type: T.LessonType, min: number, en: string, kn: string, sen: string, skn: string, extra: Partial<T.Lesson> = {}): T.Lesson => ({ id, type, minutes: min, title: { en, kn }, summary: { en: sen, kn: skn }, ...extra });
@@ -163,3 +165,49 @@ export const progress: Record<string, T.LessonProgress> = {
   "L-PR1": { done: true, watchedPct: 100, positionSec: 720 }, "L-PR2": { done: true }, "L-PR3": { done: false, attempts: [{ score: 2, total: 4, at: d("10-10"), answers: [0, 1, 0, 1] }] },
   "L-GR1": { done: false, watchedPct: 40, positionSec: 330 },
 };
+
+// ---- Admin panel seed: accounts and villages (fictional) ----
+import type { User, Village } from "./types";
+import { gps, districtOf } from "./seed-geo";
+const staff = (id: string, name: string, role: User["role"], scope: Partial<Pick<User, "district" | "taluk" | "gp">> = {}, n: number): User => ({
+  id, name, role, status: "Active", phone: `+91 9000000${String(100 + n)}`, email: `${name.toLowerCase().replace(/[^a-z]+/g, ".").replace(/\.$/, "")}@example.org`,
+  district: scope.district ?? "", taluk: scope.taluk ?? "", gp: scope.gp ?? "", createdAt: "2026-06-01", lastLogin: "2026-10-2" + (n % 3),
+});
+export const users: User[] = [
+  staff("U-001", "Meena Reviewer", "superAdmin", {}, 1),
+  staff("U-002", "Dinesh (District)", "districtAdmin", { district: "Mysuru" }, 2),
+  staff("U-003", "Chitra (AC)", "blockAdmin", { district: "Mysuru", taluk: "Nanjangud" }, 3),
+  staff("U-004", "Mohan (Local)", "blockAdmin", { district: "Mysuru", taluk: "Nanjangud", gp: "Hosahalli GP" }, 4),
+  staff("U-005", "Neha Coordinator", "trainingCoordinator", {}, 5),
+  staff("U-006", "Savitha Rao", "trainer", {}, 6),
+  staff("U-007", "Girish Grievance", "grievanceManager", {}, 7),
+  staff("U-008", "Charu Content", "contentManager", {}, 8),
+  ...participants.map((p, i): User => ({
+    id: `U-V${p.id.slice(2)}`, name: p.name, role: "volunteer", status: "Active", phone: `+91 9000001${String(100 + i)}`, email: `${p.name.toLowerCase().replace(/[^a-z]+/g, ".").replace(/\.$/, "")}@example.org`,
+    district: p.district, taluk: p.taluk, gp: p.gp, participantId: p.id, createdAt: applications.find((a) => a.id === p.appId)?.submittedAt ?? "2026-07-01", lastLogin: i % 3 === 0 ? undefined : "2026-10-1" + (i % 9),
+  })),
+  { id: "U-V900", name: "Pradeep K", role: "volunteer", status: "Inactive", phone: "+91 9000001990", email: "pradeep.k@example.org", district: "Mandya", taluk: "Pandavapura", gp: "Hirisave GP", createdAt: "2026-08-12", statusReason: "Requested a pause" },
+];
+export const villages: Village[] = gps.flatMap((g, i): Village[] => {
+  const vols = participants.filter((p) => p.gp === g.name).map((p) => p.id);
+  const base: Village = { id: `V-${100 + i * 2}`, name: g.name.replace(" GP", ""), gp: g.name, taluk: g.taluk, district: districtOf(g.taluk), population: 900 + i * 173, status: vols.length ? "Enrolled" : "Pending", enrolledOn: vols.length ? `2026-09-${String(2 + i).padStart(2, "0")}` : undefined, volunteerIds: vols };
+  const extra: Village = { id: `V-${101 + i * 2}`, name: `${g.name.replace(" GP", "")} Colony`, gp: g.name, taluk: g.taluk, district: districtOf(g.taluk), population: 300 + i * 40, status: i === 4 ? "Inactive" : "Pending", volunteerIds: [] };
+  return i % 3 === 0 ? [base, extra] : [base];
+});
+
+// ---- Learning resource library seed ----
+import type { LearningResource, ResourceCategory } from "./types";
+export const resourceCategories: ResourceCategory[] = [
+  { id: "RC-1", name: { en: "Gram Panchayat governance", kn: "ಗ್ರಾಮ ಪಂಚಾಯತ್ ಆಡಳಿತ" }, order: 1 },
+  { id: "RC-2", name: { en: "Village administration", kn: "ಗ್ರಾಮ ಆಡಳಿತ" }, order: 2 },
+  { id: "RC-3", name: { en: "Public services", kn: "ಸಾರ್ವಜನಿಕ ಸೇವೆಗಳು" }, order: 3 },
+  { id: "RC-4", name: { en: "Grievance handling", kn: "ದೂರು ನಿರ್ವಹಣೆ" }, order: 4 },
+  { id: "RC-5", name: { en: "Digital skills", kn: "ಡಿಜಿಟಲ್ ಕೌಶಲ್ಯ" }, order: 5 },
+];
+const rs = (id: string, o: Partial<LearningResource> & Pick<LearningResource, "title" | "short" | "categoryId" | "topic" | "type">): LearningResource => ({ full: "", language: "en", audience: ["volunteers", "trainers"], order: 1, status: "Published", publishDate: "2026-09-01", createdAt: "2026-09-01", updatedAt: "2026-09-01", id, ...o });
+export const resources: LearningResource[] = [
+  rs("LR-1", { title: "Women in village councils (documentary)", short: "A 5-minute documentary on how villagers, especially women, take part in Panchayat governance.", full: "Licensed sample film (CC BY 3.0, Indian Diplomacy). It is not footage of this programme's training.", categoryId: "RC-1", topic: "Participation", type: "videoFile", file: { name: "women-in-panchayat.webm", size: 26712764, mime: "video/webm", path: "/videos/women-in-panchayat.webm" }, thumb: { name: "poster.jpg", size: 111892, mime: "image/jpeg", path: "/videos/women-in-panchayat-poster.jpg" }, order: 1, credit: "Indian Diplomacy, CC BY 3.0, via Wikimedia Commons" }),
+  rs("LR-2", { title: "Ministry of Panchayati Raj – official portal", short: "National portal for Panchayati Raj information, schemes and notices. Opens an external website.", categoryId: "RC-1", topic: "Official sources", type: "link", url: "https://panchayat.gov.in/", thumb: { name: "gp.jpg", size: 164938, mime: "image/jpeg", path: "/images/sections/journey.jpg" }, order: 2 }),
+  rs("LR-3", { title: "Karnataka Rural Development & Panchayat Raj Department", short: "State department website with circulars and Gram Panchayat information. Opens an external website.", categoryId: "RC-2", topic: "Official sources", type: "link", url: "https://rdpr.karnataka.gov.in/", language: "both", thumb: { name: "village.jpg", size: 156083, mime: "image/jpeg", path: "/images/sections/about.jpg" }, order: 3 }),
+  rs("LR-4", { title: "National Portal of India (draft)", short: "Draft entry: find government services and information. Not yet published.", categoryId: "RC-3", topic: "Public services", type: "link", url: "https://www.india.gov.in/", status: "Draft", publishDate: undefined, order: 4 }),
+];

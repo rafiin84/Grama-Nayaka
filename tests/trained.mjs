@@ -2,7 +2,7 @@ import { chromium } from "playwright";
 const base = process.env.BASE ?? "http://localhost:3100"; const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
 const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
 await p.goto(base); await p.evaluate(() => localStorage.setItem("gn-prefs", JSON.stringify({ state: { lang: "en", role: "state", stage: "lms" }, version: 0 })));
-const read = async () => { await p.goto(base + "/", { waitUntil: "networkidle" }); await p.waitForTimeout(1500); const strip = await p.locator("section >> text=Volunteers trained").first().locator("xpath=preceding-sibling::p").innerText(); const sess = await p.locator("text=Sessions conducted").first().locator("xpath=preceding-sibling::p").innerText().catch(() => "?"); return { trained: strip, sessions: sess }; };
+const read = async () => { await p.goto(base + "/admin", { waitUntil: "networkidle" }); await p.waitForTimeout(1200); const trained = await p.locator("p:has-text('Volunteers trained') + p").first().innerText(); const sess = (await p.locator("text=/\\d+ conducted/").first().innerText()).match(/(\d+) conducted/)[1]; return { trained, sessions: sess }; };
 console.log("before", await read());
 await p.goto(base + "/admin/attendance", { waitUntil: "networkidle" }); await p.waitForTimeout(800);
 await p.selectOption('main select[aria-label="Class"]', "CL-B1");

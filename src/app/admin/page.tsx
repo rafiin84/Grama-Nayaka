@@ -1,60 +1,87 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import Link from "next/link";
-import { useState } from "react";
-import { Button, Card, PageHeader, QState, Select, Stat } from "@/components/ui";
-import { ChartCard } from "@/components/charts";
-import { api, useAct, useMock } from "@/lib/api";
-import { getDb, inScope } from "@/lib/db";
-import { usePrefs } from "@/lib/store";
-import { districts } from "@/lib/seed-geo";
-import { today } from "@/lib/derive";
-import { useT } from "@/lib/useT";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ArrowRight, CheckCircle, ClipboardText, Clock, DownloadSimple, FunnelSimple, MapPinLine, UsersThree, Warning } from "@phosphor-icons/react";
+import { Badge, Button, Card, Empty, Field, Input, PageHeader, QState, Select } from "@/components/ui";
+import { ChartCard } from "@/components/charts";
+import { useMock } from "@/lib/api";
+import { getDb } from "@/lib/db";
+import { adminStats, emptyFilters, type DashFilters } from "@/lib/adminStats";
+import { downloadText, toCsv } from "@/lib/csv";
+import { districts, gpOptions, talukOptions } from "@/lib/geo";
+import { today } from "@/lib/derive";
+import { usePrefs } from "@/lib/store";
+import { useT } from "@/lib/useT";
+import { cn } from "@/lib/utils";
+
+const daysAgo = (n: number) => new Date(new Date(today).getTime() - n * 86400000).toISOString().slice(0, 10);
 
 export default function Overview() {
-  const { tr } = useT(); const act = useAct(); const role = usePrefs((s) => s.role); const router = useRouter();
-  const [dist, setDist] = useState(""); const [cohort, setCohort] = useState(""); const [range, setRange] = useState("90");
+  const { tr } = useT(); const role = usePrefs((s) => s.role); const router = useRouter(); const [f, setF] = useState<DashFilters>(emptyFilters);
+  const q = useMock(["dash", JSON.stringify(f)], () => { const d = getDb(); return { s: adminStats(d, role, f), villages: d.villages, statuses: ["Open", "In Progress", "Follow-up Due", "Escalated", "Closure Pending", "Closed", "Reopened"] }; });
   if (role === "trainer") { if (typeof window !== "undefined") router.replace("/admin/training"); return null; }
-  return <Inner {...{ tr, act, role, dist, setDist, cohort, setCohort, range, setRange }} />;
-}
-function Inner({ tr, act, role, dist, setDist, cohort, setCohort, range, setRange }: Record<string, any>) {  
-  const q = useMock(["overview", dist, cohort, range], () => {
-    const d = getDb(); const apps = d.applications.filter((a: any) => inScope(role, a) && (!dist || a.district === dist)); const ps = d.participants.filter((p: any) => inScope(role, p) && (!dist || p.district === dist) && (!cohort || p.cohort === cohort));
-    const gs = d.grievances.filter((g: any) => inScope(role, g) && (!dist || g.district === dist)); const cls = d.classes.filter((c: any) => !cohort || c.cohort === cohort);
-    const cap = cls.reduce((a: number, c: any) => a + c.capacity, 0); const fill = cls.reduce((a: number, c: any) => a + c.roster.length, 0);
-    const approved = apps.filter((a: any) => a.status === "Approved").length; const done = ps.filter((p: any) => p.trainingDone).length; const lmsDone = ps.filter((p: any) => p.lmsProgress >= 100).length; const field = ps.filter((p: any) => d.grievances.some((g: any) => g.ownerId === p.id)).length;
-    const closed = gs.filter((g: any) => g.status === "Closed").length;
-    return { apps, ps, gs, cap, fill, approved, done, lmsDone, field, closed, cls, resid: d.residents.filter((r: any) => inScope(role, r)).length, voters: d.voters.length, ev: d.events.reduce((a: number, e: any) => a + e.attended.length, 0), points: d.ledger.filter((l: any) => l.verified).reduce((a: number, l: any) => a + l.points, 0),
-      overdue: gs.filter((g: any) => g.status !== "Closed" && g.followUpDate < today), pendingApps: apps.filter((a: any) => a.status === "Submitted" || a.status === "Under Review").length, pendingRules: d.ledger.filter((l: any) => !l.verified).length };
-  });
-  return (<div className="space-y-4">
-    <PageHeader title={tr("What needs attention today", "ಇಂದು ಗಮನ ಬೇಕಾದದ್ದು")} sub={tr("Demo data · Source: mock programme records · Refreshed 2026-10-20 17:40 · Counts are not official statistics.", "ಡೆಮೊ ಡೇಟಾ · ಮೂಲ: ಮಾಕ್ ಕಾರ್ಯಕ್ರಮ ದಾಖಲೆ · ನವೀಕರಣ 2026-10-20 17:40 · ಅಧಿಕೃತ ಅಂಕಿಅಂಶವಲ್ಲ.")} actions={<Button variant="secondary" onClick={() => act(() => api.report.exportCsv("overview"), tr("Report download prepared (mock) and logged", "ವರದಿ ಡೌನ್‌ಲೋಡ್ ಸಿದ್ಧ (ಮಾಕ್), ದಾಖಲಿಸಲಾಗಿದೆ"))}>{tr("Download report (mock)", "ವರದಿ ಡೌನ್‌ಲೋಡ್ (ಮಾಕ್)")}</Button>} />
-    <div className="grid gap-2 sm:grid-cols-4"><Select aria-label="Date range" value={range} onChange={(e) => setRange(e.target.value)}><option value="30">{tr("Last 30 days", "ಕಳೆದ 30 ದಿನ")}</option><option value="90">{tr("Last 90 days", "ಕಳೆದ 90 ದಿನ")}</option></Select><Select aria-label="District" value={dist} onChange={(e) => setDist(e.target.value)}><option value="">{tr("All districts in scope", "ವ್ಯಾಪ್ತಿಯ ಎಲ್ಲಾ ಜಿಲ್ಲೆ")}</option>{districts.map((x) => <option key={x}>{x}</option>)}</Select><Select aria-label="Cohort" value={cohort} onChange={(e) => setCohort(e.target.value)}><option value="">{tr("All cohorts", "ಎಲ್ಲಾ ಕೋಹಾರ್ಟ್")}</option>{["A", "B", "C"].map((x) => <option key={x}>{x}</option>)}</Select></div>
-    <QState q={q}>{(d: any) => (<> { }
-      <Card className="border-warning/40"><h2 className="font-bold">{tr("Needs attention", "ಗಮನ ಬೇಕು")}</h2><ul className="mt-2 space-y-1 text-sm">
-        <li><Link className="text-primary underline" href="/admin/applications">{d.pendingApps} {tr("applications awaiting review", "ಅರ್ಜಿಗಳು ಪರಿಶೀಲನೆಗೆ ಕಾಯುತ್ತಿವೆ")}</Link></li>
-        <li><Link className="text-primary underline" href="/admin/grievances">{d.overdue.length} {tr("grievances with overdue follow-up", "ದೂರುಗಳ ಅನುಸರಣೆ ವಿಳಂಬ")}</Link></li>
-        <li><Link className="text-primary underline" href="/admin/rewards">{d.pendingRules} {tr("points awaiting validation", "ಅಂಕಗಳು ದೃಢೀಕರಣಕ್ಕೆ ಬಾಕಿ")}</Link></li>
-        <li><Link className="text-primary underline" href="/admin/training">{tr("Waitlisted participants", "ಕಾಯುವ ಪಟ್ಟಿ")}: {d.cls.reduce((a: number, c: any) => a + c.waitlist.length, 0)}</Link></li></ul></Card>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label={tr("Applications received", "ಅರ್ಜಿಗಳು")} value={d.apps.length} hint={tr("All submitted applications in scope", "ವ್ಯಾಪ್ತಿಯ ಎಲ್ಲಾ ಸಲ್ಲಿಸಿದ ಅರ್ಜಿ")} />
-        <Stat label={tr("Approved", "ಅನುಮೋದಿತ")} value={d.approved} hint={tr(`Conversion ${d.apps.length ? Math.round((d.approved / d.apps.length) * 100) : 0}% of received`, `ಪರಿವರ್ತನೆ ${d.apps.length ? Math.round((d.approved / d.apps.length) * 100) : 0}%`)} />
-        <Stat label={tr("Completed both training days", "ಎರಡೂ ದಿನ ಪೂರ್ಣ")} value={d.done} hint={tr("Of approved participants in scope", "ವ್ಯಾಪ್ತಿಯ ಅನುಮೋದಿತರಲ್ಲಿ")} />
-        <Stat label={tr("Training seats filled", "ಭರ್ತಿ ಆಸನ")} value={`${d.fill}/${d.cap}`} hint={tr("Sum of configured class capacities", "ಸಂರಚಿತ ಸಾಮರ್ಥ್ಯದ ಮೊತ್ತ")} />
-        <Stat label={tr("LMS completed", "LMS ಪೂರ್ಣ")} value={`${d.lmsDone}/${d.ps.length}`} hint={tr("Participants with 100% of enrolled lessons", "ದಾಖಲಾದ ಎಲ್ಲಾ ಪಾಠ ಮುಗಿಸಿದವರು")} />
-        <Stat label={tr("Resident records", "ನಿವಾಸಿ ದಾಖಲೆ")} value={d.resid} hint={tr("Aggregate count only", "ಒಟ್ಟು ಸಂಖ್ಯೆ ಮಾತ್ರ")} />
-        <Stat label={tr("Grievances open / closed", "ದೂರು ಬಾಕಿ / ಮುಚ್ಚಿದ")} value={`${d.gs.length - d.closed} / ${d.closed}`} hint={tr(`Closure rate ${d.gs.length ? Math.round((d.closed / d.gs.length) * 100) : 0}% — mock records, not official resolution`, `ಮುಚ್ಚುವ ದರ ${d.gs.length ? Math.round((d.closed / d.gs.length) * 100) : 0}% — ಮಾಕ್ ದಾಖಲೆ`)} />
-        <Stat label={tr("Event attendance", "ಕಾರ್ಯಕ್ರಮ ಹಾಜರಾತಿ")} value={d.ev} hint={tr("Recorded check-ins", "ದಾಖಲಾದ ಹಾಜರಿ")} />
-        {role !== "participant" && (role === "state" || role === "district" || role === "ac" || role === "local") && <Stat label={tr("Voter-related records", "ಮತದಾರ ಸಂಬಂಧಿತ ದಾಖಲೆ")} value={d.voters} hint={tr("Restricted · count only, not externally verified", "ನಿರ್ಬಂಧಿತ · ಸಂಖ್ಯೆ ಮಾತ್ರ, ಬಾಹ್ಯ ಪರಿಶೀಲನೆ ಇಲ್ಲ")} />}
-        <Stat label={tr("Verified points awarded", "ದೃಢೀಕೃತ ಅಂಕ")} value={d.points} />
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title={tr("Programme funnel", "ಕಾರ್ಯಕ್ರಮ ಫನಲ್")} layout="horizontal" summary={tr(`From ${d.apps.length} applications to ${d.field} participants with field activity.`, `${d.apps.length} ಅರ್ಜಿಗಳಿಂದ ${d.field} ಕ್ಷೇತ್ರ ಚಟುವಟಿಕೆ ಭಾಗವಹಿಸುವವರು.`)} keys={[tr("People", "ಜನರು")]} rows={[{ stage: tr("Applied", "ಅರ್ಜಿ"), [tr("People", "ಜನರು")]: d.apps.length }, { stage: tr("Approved", "ಅನುಮೋದಿತ"), [tr("People", "ಜನರು")]: d.approved }, { stage: tr("Classroom done", "ತರಗತಿ ಪೂರ್ಣ"), [tr("People", "ಜನರು")]: d.done }, { stage: tr("LMS done", "LMS ಪೂರ್ಣ"), [tr("People", "ಜನರು")]: d.lmsDone }, { stage: tr("Field active", "ಕ್ಷೇತ್ರ ಸಕ್ರಿಯ"), [tr("People", "ಜನರು")]: d.field }]} />
-        <ChartCard title={tr("Training capacity by class", "ತರಗತಿವಾರು ಸಾಮರ್ಥ್ಯ")} summary={tr("Filled seats vs configured capacity for each class.", "ಪ್ರತಿ ತರಗತಿಯ ಭರ್ತಿ ಆಸನ ಮತ್ತು ಸಂರಚಿತ ಸಾಮರ್ಥ್ಯ.")} keys={[tr("Filled", "ಭರ್ತಿ"), tr("Capacity", "ಸಾಮರ್ಥ್ಯ")]} rows={d.cls.map((c: any) => ({ class: c.id.replace("CL-", ""), [tr("Filled", "ಭರ್ತಿ")]: c.roster.length, [tr("Capacity", "ಸಾಮರ್ಥ್ಯ")]: c.capacity }))} />
-        <ChartCard title={tr("Grievances by status", "ಸ್ಥಿತಿವಾರು ದೂರುಗಳು")} layout="horizontal" summary={tr("Counts of cases in each status (mock records).", "ಪ್ರತಿ ಸ್ಥಿತಿಯ ಪ್ರಕರಣ ಸಂಖ್ಯೆ (ಮಾಕ್).")} keys={[tr("Cases", "ಪ್ರಕರಣ")]} rows={["Open", "In Progress", "Follow-up Due", "Escalated", "Closure Pending", "Closed", "Reopened"].map((s) => ({ status: s, [tr("Cases", "ಪ್ರಕರಣ")]: d.gs.filter((g: any) => g.status === s).length }))} />
-        <ChartCard kind="line" title={tr("Applications per month", "ತಿಂಗಳವಾರು ಅರ್ಜಿಗಳು")} summary={tr("Demo trend by month received.", "ಸ್ವೀಕರಿಸಿದ ತಿಂಗಳ ಡೆಮೊ ಪ್ರವೃತ್ತಿ.")} keys={[tr("Applications", "ಅರ್ಜಿಗಳು")]} rows={["Jun", "Jul", "Aug", "Sep", "Oct"].map((m, i) => ({ month: m, [tr("Applications", "ಅರ್ಜಿಗಳು")]: [0, d.apps.length, Math.round(d.apps.length * 0.4), Math.round(d.apps.length * 0.2), 1][i] }))} />
-      </div>
-      <Card><h2 className="font-bold">{tr("Geography comparison (ranked, per participant)", "ಭೌಗೋಳಿಕ ಹೋಲಿಕೆ (ಪ್ರತಿ ಭಾಗವಹಿಸುವವರಿಗೆ)")}</h2><p className="text-xs text-muted">{tr("Average verified points per participant, so population size does not decide the rank. No map data in this demo.", "ಪ್ರತಿ ಭಾಗವಹಿಸುವವರ ಸರಾಸರಿ ದೃಢೀಕೃತ ಅಂಕ; ಜನಸಂಖ್ಯೆ ರ‍್ಯಾಂಕ್ ನಿರ್ಧರಿಸುವುದಿಲ್ಲ. ಈ ಡೆಮೊದಲ್ಲಿ ನಕ್ಷೆ ಇಲ್ಲ.")}</p>
-        <ol className="mt-2 text-sm">{Object.entries((d.ps as any[]).reduce((a: Record<string, number[]>, p: any) => { (a[p.district] ??= []).push(p.points); return a; }, {})).map(([k, v]: [string, number[]]) => [k, Math.round(v.reduce((a, b) => a + b, 0) / v.length), v.length] as [string, number, number]).sort((a, b) => b[1] - a[1]).map(([k, avg, n]) => <li key={k} className="flex justify-between border-b border-border py-1"><span>{k} ({n})</span><b>{avg}</b></li>)}</ol></Card></>)}</QState></div>);
+  const set = (p: Partial<DashFilters>) => setF({ ...f, ...p });
+  const active = Object.entries(f).some(([, v]) => v);
+
+  return (
+    <div className="space-y-5">
+      <PageHeader title={tr("Admin dashboard", "ಅಡ್ಮಿನ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್")} sub={tr("Every figure is counted from the app's records, inside your role's scope and the filters below. This prototype holds demo data.", "ಪ್ರತಿ ಅಂಕಿಯನ್ನೂ ಆ್ಯಪ್ ದಾಖಲೆಗಳಿಂದ, ನಿಮ್ಮ ಪಾತ್ರದ ವ್ಯಾಪ್ತಿ ಮತ್ತು ಕೆಳಗಿನ ಫಿಲ್ಟರ್‌ಗಳೊಳಗೆ ಎಣಿಸಲಾಗಿದೆ. ಈ ಮಾದರಿ ಡೆಮೊ ಡೇಟಾ ಹೊಂದಿದೆ.")}
+        actions={<Button variant="secondary" disabled={!q.data} onClick={() => { const s = q.data!.s; downloadText("dashboard-report.csv", toCsv(["metric", "value"], [["Volunteers registered", s.registered], ["Volunteers trained", s.trained], ["Volunteers pending training", s.pendingTraining], ["Training sessions", s.sessionsTotal], ["Sessions conducted", s.sessionsConducted], ["Villages enrolled", s.villagesEnrolled], ["Villages pending enrollment", s.villagesPending], ["Districts", s.districts], ["Blocks / taluks", s.blocks], ["Gram Panchayats", s.gps], ["Grievances submitted", s.grievances.submitted], ["Grievances pending action", s.grievances.pendingAction], ["Grievances awaiting official response", s.grievances.awaitingResponse], ["Grievances closed", s.grievances.closed], ["Learning resources", s.resources], ["Active users", s.activeUsers], ["Inactive users", s.inactiveUsers]])); }}><DownloadSimple />{tr("Download report", "ವರದಿ ಡೌನ್‌ಲೋಡ್")}</Button>} />
+
+      {/* Filters */}
+      <Card className="space-y-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2"><span className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted"><FunnelSimple size={18} />{tr("Filters", "ಫಿಲ್ಟರ್")}</span>
+          <div className="flex flex-wrap items-center gap-2 text-sm">{[[tr("Last 30 days", "ಕಳೆದ 30 ದಿನ"), daysAgo(30)], [tr("Last 90 days", "ಕಳೆದ 90 ದಿನ"), daysAgo(90)]].map(([l, from]) => <button key={l} onClick={() => set({ from, to: today })} className={cn("rounded-full border px-3 py-1", f.from === from ? "border-transparent bg-primary text-primary-fg" : "border-border bg-card")}>{l}</button>)}<button onClick={() => set({ from: "", to: "" })} className={cn("rounded-full border px-3 py-1", !f.from && !f.to ? "border-transparent bg-primary text-primary-fg" : "border-border bg-card")}>{tr("All time", "ಎಲ್ಲಾ ಕಾಲ")}</button>{active && <Button size="sm" variant="ghost" onClick={() => setF(emptyFilters)}>{tr("Reset", "ಮರುಹೊಂದಿಸಿ")}</Button>}</div></div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label={tr("District", "ಜಿಲ್ಲೆ")}>{(i) => <Select id={i} value={f.district} onChange={(e) => set({ district: e.target.value, taluk: "", gp: "", village: "" })}><option value="">{tr("All in scope", "ವ್ಯಾಪ್ತಿಯ ಎಲ್ಲಾ")}</option>{districts.map((x) => <option key={x}>{x}</option>)}</Select>}</Field>
+          <Field label={tr("Block / taluk", "ಬ್ಲಾಕ್ / ತಾಲ್ಲೂಕು")}>{(i) => <Select id={i} value={f.taluk} onChange={(e) => set({ taluk: e.target.value, gp: "", village: "" })}><option value="">{tr("All", "ಎಲ್ಲಾ")}</option>{talukOptions(f.district).map((x) => <option key={x}>{x}</option>)}</Select>}</Field>
+          <Field label="Gram Panchayat">{(i) => <Select id={i} value={f.gp} onChange={(e) => set({ gp: e.target.value, village: "" })}><option value="">{tr("All", "ಎಲ್ಲಾ")}</option>{gpOptions(f.taluk).map((x) => <option key={x}>{x}</option>)}</Select>}</Field>
+          <Field label={tr("Village", "ಗ್ರಾಮ")}>{(i) => <Select id={i} value={f.village} onChange={(e) => set({ village: e.target.value })}><option value="">{tr("All", "ಎಲ್ಲಾ")}</option>{(q.data?.villages ?? []).filter((v) => (!f.district || v.district === f.district) && (!f.taluk || v.taluk === f.taluk) && (!f.gp || v.gp === f.gp)).map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</Select>}</Field>
+          <Field label={tr("From", "ಇಂದ")}>{(i) => <Input id={i} type="date" value={f.from} max={f.to || undefined} onChange={(e) => set({ from: e.target.value })} />}</Field>
+          <Field label={tr("To", "ವರೆಗೆ")}>{(i) => <Input id={i} type="date" value={f.to} min={f.from || undefined} onChange={(e) => set({ to: e.target.value })} />}</Field>
+          <Field label={tr("Training status", "ತರಬೇತಿ ಸ್ಥಿತಿ")}>{(i) => <Select id={i} value={f.training} onChange={(e) => set({ training: e.target.value as DashFilters["training"] })}><option value="">{tr("Any", "ಯಾವುದೇ")}</option><option value="trained">{tr("Trained", "ತರಬೇತಿ ಪೂರ್ಣ")}</option><option value="pending">{tr("Pending training", "ತರಬೇತಿ ಬಾಕಿ")}</option></Select>}</Field>
+          <Field label={tr("Grievance status", "ದೂರು ಸ್ಥಿತಿ")}>{(i) => <Select id={i} value={f.gStatus} onChange={(e) => set({ gStatus: e.target.value })}><option value="">{tr("Any", "ಯಾವುದೇ")}</option>{(q.data?.statuses ?? []).map((x) => <option key={x}>{x}</option>)}</Select>}</Field>
+        </div>
+      </Card>
+
+      <QState q={q}>{({ s }) => (<>
+        {/* Attention */}
+        <section aria-labelledby="attn">
+          <div className="mb-3 flex items-center justify-between"><h2 id="attn" className="text-lg font-bold">{tr("Needs attention", "ಗಮನ ಬೇಕು")}</h2>{(() => { const n = s.approvals.applications + s.overdueCount + s.approvals.villages + s.pendingTraining; return n === 0 ? <span className="inline-flex items-center gap-1 text-sm font-medium text-success"><CheckCircle size={18} weight="fill" />{tr("All clear", "ಎಲ್ಲವೂ ಸರಿಯಾಗಿದೆ")}</span> : <span className="text-sm text-muted">{tr(`${n} items to review`, `${n} ಅಂಶಗಳು ಪರಿಶೀಲನೆಗೆ`)}</span>; })()}</div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {([[ClipboardText, s.approvals.applications, tr("Application awaiting review", "ಅರ್ಜಿ ಪರಿಶೀಲನೆಗೆ ಬಾಕಿ"), tr("Applications awaiting review", "ಅರ್ಜಿಗಳು ಪರಿಶೀಲನೆಗೆ ಬಾಕಿ"), "/admin/applications"], [Clock, s.overdueCount, tr("Grievance with overdue follow-up", "ವಿಳಂಬ ಅನುಸರಣೆಯ ದೂರು"), tr("Grievances with overdue follow-up", "ವಿಳಂಬ ಅನುಸರಣೆಯ ದೂರುಗಳು"), "/admin/grievances"], [MapPinLine, s.approvals.villages, tr("Village pending enrollment", "ನೋಂದಣಿ ಬಾಕಿ ಗ್ರಾಮ"), tr("Villages pending enrollment", "ನೋಂದಣಿ ಬಾಕಿ ಗ್ರಾಮಗಳು"), "/admin/villages"], [UsersThree, s.pendingTraining, tr("Volunteer pending training", "ತರಬೇತಿ ಬಾಕಿ ಸ್ವಯಂಸೇವಕ"), tr("Volunteers pending training", "ತರಬೇತಿ ಬಾಕಿ ಸ್ವಯಂಸೇವಕರು"), "/admin/users"]] as const).map(([Icon, n, one, many, href]) => (
+              <Link key={href} href={href} className={cn("group flex items-center gap-4 rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md", n > 0 ? "border-transparent bg-gradient-to-br from-forest to-deep text-white shadow-sm" : "border-primary/25 bg-accent-soft")}>
+                <span className={cn("grid h-12 w-12 shrink-0 place-items-center rounded-2xl", n > 0 ? "bg-white/15 text-white" : "bg-primary/15 text-primary")}>{n === 0 ? <CheckCircle size={26} weight="fill" /> : <Icon size={26} weight="duotone" />}</span>
+                <span className="min-w-0 flex-1"><span className={cn("block text-3xl font-bold leading-none", n === 0 && "text-primary")}>{n}</span><span className={cn("mt-1 block text-sm", n > 0 ? "text-white/80" : "text-muted")}>{n === 1 ? one : many}</span></span>
+                <ArrowRight className={cn("shrink-0 transition group-hover:translate-x-1", n > 0 ? "text-white/80" : "text-muted group-hover:text-primary")} />
+              </Link>))}
+          </div>
+        </section>
+
+        {/* KPI groups */}
+        {([
+          [tr("Volunteers & training", "ಸ್ವಯಂಸೇವಕರು ಮತ್ತು ತರಬೇತಿ"), [[tr("Volunteers registered", "ನೋಂದಾಯಿತ ಸ್ವಯಂಸೇವಕರು"), s.registered, tr("Volunteer accounts in scope (not deleted)", "ವ್ಯಾಪ್ತಿಯ ಸ್ವಯಂಸೇವಕ ಖಾತೆಗಳು (ಅಳಿಸದ)")], [tr("Volunteers trained", "ತರಬೇತಿ ಪಡೆದವರು"), s.trained, tr("Attended both training days", "ಎರಡೂ ದಿನ ಹಾಜರಾದವರು")], [tr("Pending training", "ತರಬೇತಿ ಬಾಕಿ"), s.pendingTraining, tr("Registered minus trained", "ನೋಂದಾಯಿತ ಮೈನಸ್ ತರಬೇತಿ ಪಡೆದವರು")], [tr("Training sessions", "ತರಬೇತಿ ಅವಧಿಗಳು"), s.sessionsTotal, tr(`${s.sessionsConducted} conducted (all rostered attendance recorded)`, `${s.sessionsConducted} ನಡೆದಿವೆ (ಎಲ್ಲರ ಹಾಜರಾತಿ ದಾಖಲು)`)]]],
+          [tr("Villages & geography", "ಗ್ರಾಮಗಳು ಮತ್ತು ಭೌಗೋಳಿಕತೆ"), [[tr("Villages enrolled", "ನೋಂದಾಯಿತ ಗ್ರಾಮಗಳು"), s.villagesEnrolled, tr(`of ${s.villagesTotal} on record`, `ದಾಖಲಾದ ${s.villagesTotal} ರಲ್ಲಿ`)], [tr("Pending enrollment", "ನೋಂದಣಿ ಬಾಕಿ"), s.villagesPending, tr("Villages with status Pending", "ಸ್ಥಿತಿ 'ಬಾಕಿ' ಇರುವ ಗ್ರಾಮಗಳು")], [tr("Districts / blocks", "ಜಿಲ್ಲೆಗಳು / ಬ್ಲಾಕ್‌ಗಳು"), `${s.districts} / ${s.blocks}`, tr("From master data, in scope", "ಮಾಸ್ಟರ್ ಡೇಟಾ, ವ್ಯಾಪ್ತಿಯೊಳಗೆ")], [tr("Gram Panchayats", "ಗ್ರಾಮ ಪಂಚಾಯತ್‌ಗಳು"), s.gps, tr("From master data, in scope", "ಮಾಸ್ಟರ್ ಡೇಟಾ, ವ್ಯಾಪ್ತಿಯೊಳಗೆ")]]],
+          [tr("Grievances", "ದೂರುಗಳು"), [[tr("Submitted", "ಸಲ್ಲಿಸಿದ"), s.grievances.submitted, tr("All cases in scope and filters", "ವ್ಯಾಪ್ತಿ ಮತ್ತು ಫಿಲ್ಟರ್‌ನ ಎಲ್ಲಾ ಪ್ರಕರಣ")], [tr("Pending action", "ಕ್ರಮ ಬಾಕಿ"), s.grievances.pendingAction, tr("Open, In Progress or Reopened", "ತೆರೆದ, ಪ್ರಗತಿಯಲ್ಲಿರುವ ಅಥವಾ ಮರುತೆರೆದ")], [tr("Awaiting official response", "ಅಧಿಕೃತ ಉತ್ತರಕ್ಕೆ ಕಾಯುತ್ತಿದೆ"), s.grievances.awaitingResponse, tr("Follow-up due or Escalated", "ಅನುಸರಣೆ ಬಾಕಿ ಅಥವಾ ಹೆಚ್ಚಿನ ಹಂತ")], [tr("Resolved & closed", "ಪರಿಹರಿಸಿ ಮುಚ್ಚಿದ"), s.grievances.closed, tr(`+ ${s.grievances.closurePending} awaiting confirmation`, `+ ${s.grievances.closurePending} ದೃಢೀಕರಣಕ್ಕೆ ಬಾಕಿ`)]]],
+          [tr("Learning & users", "ಕಲಿಕೆ ಮತ್ತು ಬಳಕೆದಾರರು"), [[tr("Learning resources", "ಕಲಿಕಾ ಸಂಪನ್ಮೂಲ"), s.resources, tr(`Published lessons in ${s.courses} courses`, `${s.courses} ಕೋರ್ಸ್‌ಗಳಲ್ಲಿ ಪ್ರಕಟಿತ ಪಾಠಗಳು`)], [tr("Active users", "ಸಕ್ರಿಯ ಬಳಕೆದಾರರು"), s.activeUsers, tr("Accounts with status Active", "ಸ್ಥಿತಿ ಸಕ್ರಿಯ ಇರುವ ಖಾತೆಗಳು")], [tr("Inactive users", "ನಿಷ್ಕ್ರಿಯ ಬಳಕೆದಾರರು"), s.inactiveUsers, tr("Inactive or suspended", "ನಿಷ್ಕ್ರಿಯ ಅಥವಾ ತಡೆ")], [tr("Applications", "ಅರ್ಜಿಗಳು"), s.applications, tr(`${s.approved} approved`, `${s.approved} ಅನುಮೋದಿತ`)]]],
+        ] as [string, [string, string | number, string][]][]).map(([title, items]) => (
+          <section key={title}><h2 className="mb-2 text-lg font-bold">{title}</h2><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{items.map(([l, v, h]) => <Card key={l} className="p-4 md:p-4" title={h}><p className="text-sm text-muted">{l}</p><p className="mt-1 text-3xl font-bold">{v}</p><p className="mt-1 text-xs text-muted">{h}</p></Card>)}</div></section>))}
+
+        {/* Charts */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ChartCard kind="line" title={tr("Volunteers registered per month", "ತಿಂಗಳವಾರು ನೋಂದಾಯಿತ ಸ್ವಯಂಸೇವಕರು")} summary={tr("Accounts by month created, within your filters.", "ರಚಿಸಿದ ತಿಂಗಳ ಪ್ರಕಾರ ಖಾತೆಗಳು, ನಿಮ್ಮ ಫಿಲ್ಟರ್‌ಗಳೊಳಗೆ.")} keys={[tr("Volunteers", "ಸ್ವಯಂಸೇವಕರು")]} rows={s.trendVolunteers.map((r) => ({ month: r.month, [tr("Volunteers", "ಸ್ವಯಂಸೇವಕರು")]: r.count }))} />
+          <ChartCard kind="line" title={tr("Grievances created vs closed", "ದೂರುಗಳು: ರಚಿತ vs ಮುಚ್ಚಿದ")} summary={tr("By month. Closed means a confirmed closure in the app's records.", "ತಿಂಗಳವಾರು. ಮುಚ್ಚಿದ ಎಂದರೆ ಆ್ಯಪ್ ದಾಖಲೆಯಲ್ಲಿ ದೃಢೀಕೃತ ಮುಚ್ಚುವಿಕೆ.")} keys={[tr("Created", "ರಚಿತ"), tr("Closed", "ಮುಚ್ಚಿದ")]} rows={s.trendGrievances.map((r) => ({ month: r.month, [tr("Created", "ರಚಿತ")]: r.created, [tr("Closed", "ಮುಚ್ಚಿದ")]: r.closed }))} />
+          <ChartCard title={tr("Training status by district", "ಜಿಲ್ಲೆವಾರು ತರಬೇತಿ ಸ್ಥಿತಿ")} summary={tr("Trained and pending volunteers in each district.", "ಪ್ರತಿ ಜಿಲ್ಲೆಯ ತರಬೇತಿ ಪಡೆದ ಮತ್ತು ಬಾಕಿ ಸ್ವಯಂಸೇವಕರು.")} keys={[tr("Trained", "ತರಬೇತಿ ಪಡೆದ"), tr("Pending", "ಬಾಕಿ")]} rows={s.byDistrict.map((r) => ({ district: r.district, [tr("Trained", "ತರಬೇತಿ ಪಡೆದ")]: r.trained, [tr("Pending", "ಬಾಕಿ")]: r.pending }))} />
+          <ChartCard title={tr("Grievances by status", "ಸ್ಥಿತಿವಾರು ದೂರುಗಳು")} layout="horizontal" summary={tr("Number of cases in each status.", "ಪ್ರತಿ ಸ್ಥಿತಿಯ ಪ್ರಕರಣಗಳು.")} keys={[tr("Cases", "ಪ್ರಕರಣ")]} rows={s.grievanceStatus.map((r) => ({ status: r.status, [tr("Cases", "ಪ್ರಕರಣ")]: r.count }))} />
+        </div>
+
+        {/* Activity, approvals, alerts */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card><h2 className="font-bold">{tr("Pending approvals", "ಬಾಕಿ ಅನುಮೋದನೆಗಳು")}</h2><ul className="mt-3 space-y-2 text-sm">{([[tr("Applications to review", "ಪರಿಶೀಲಿಸಬೇಕಾದ ಅರ್ಜಿಗಳು"), s.approvals.applications, "/admin/applications"], [tr("Points to validate", "ದೃಢೀಕರಿಸಬೇಕಾದ ಅಂಕಗಳು"), s.approvals.points, "/admin/rewards"], [tr("Redemptions to approve", "ಅನುಮೋದಿಸಬೇಕಾದ ರಿಡೆಂಪ್ಶನ್"), s.approvals.redemptions, "/admin/rewards"], [tr("Villages to enroll", "ನೋಂದಣಿಗೆ ಗ್ರಾಮಗಳು"), s.approvals.villages, "/admin/villages"]] as [string, number, string][]).map(([l, n, h]) => <li key={l}><Link href={h} className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-accent-soft"><span>{l}</span><Badge tone={n > 0 ? "warning" : "success"}>{n}</Badge></Link></li>)}</ul></Card>
+          <Card><h2 className="flex items-center gap-2 font-bold"><Warning size={18} className="text-warning" />{tr("Alerts", "ಎಚ್ಚರಿಕೆಗಳು")}</h2>{s.alerts.length === 0 ? <p className="mt-3 text-sm text-muted">{tr("No alerts right now.", "ಈಗ ಯಾವುದೇ ಎಚ್ಚರಿಕೆ ಇಲ್ಲ.")}</p> : <ul className="mt-3 space-y-2 text-sm">{s.alerts.map((a) => <li key={a.id}><Link href={a.href} className="flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-accent-soft"><span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", a.tone === "danger" ? "bg-danger" : "bg-warning")} />{a.text}</Link></li>)}</ul>}</Card>
+          <Card><div className="flex items-center justify-between"><h2 className="font-bold">{tr("Recent activity", "ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ")}</h2><Link href="/admin/audit" className="text-xs text-primary underline">{tr("Audit log", "ಆಡಿಟ್ ಲಾಗ್")}</Link></div>{s.recent.length === 0 ? <Empty title={tr("No activity yet", "ಇನ್ನೂ ಚಟುವಟಿಕೆ ಇಲ್ಲ")} /> : <ul className="mt-3 space-y-2 text-sm">{s.recent.map((a) => <li key={a.id}><p className="font-medium">{a.action}</p><p className="text-xs text-muted">{a.at} · {a.actor} · {a.resourceId}</p></li>)}</ul>}</Card>
+        </div></>)}</QState>
+    </div>
+  );
 }

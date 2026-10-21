@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Badge, Button, Card, Confirm, DemoNote, Empty, Field, Input, Modal, PageHeader, QState, Select, Table, Td, Textarea, statusTone } from "@/components/ui";
 import { api, useAct, useMock } from "@/lib/api";
 import { getDb, inScope } from "@/lib/db";
+import { useCan } from "@/lib/useCan";
 import { usePrefs } from "@/lib/store";
 import { useT } from "@/lib/useT";
 import type { AppStatus, Application } from "@/lib/types";
@@ -15,7 +16,7 @@ function Apps() {
   const [q, setQ] = useState(sp.get("q") ?? ""); const [st, setSt] = useState(""); const [sort, setSort] = useState("date"); const [page, setPage] = useState(0); const [open, setOpen] = useState<Application | null>(null); const [dec, setDec] = useState<{ a: Application; to: AppStatus } | null>(null); const [note, setNote] = useState(""); const [batch, setBatch] = useState<string[]>([]); const [bc, setBc] = useState(false);
   const data = useMock(["apps"], () => getDb().applications.filter((a) => inScope(role, a)));
   const decide = async () => { await act(() => api.applications.decide(dec!.a.id, dec!.to, note || undefined), tr(`${dec!.a.id} → ${dec!.to}`, `${dec!.a.id} → ${dec!.to}`)); setDec(null); setNote(""); setOpen(null); };
-  const canDecide = role === "state" || role === "district";
+  const { can } = useCan(); const canDecide = can("applications", "approve");
   return (<div className="space-y-4"><PageHeader title={tr("Applications", "ಅರ್ಜಿಗಳು")} sub={tr("Decisions are always made manually by a person. There is no automated scoring or admission.", "ನಿರ್ಧಾರಗಳನ್ನು ಯಾವಾಗಲೂ ವ್ಯಕ್ತಿ ಕೈಯಾರೆ ಮಾಡುತ್ತಾರೆ. ಸ್ವಯಂ ಅಂಕ ಅಥವಾ ಪ್ರವೇಶ ಇಲ್ಲ.")} />
     <div className="grid gap-2 sm:grid-cols-4"><Input aria-label="Search" placeholder={tr("Search name or ID", "ಹೆಸರು ಅಥವಾ ಐಡಿ")} value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} /><Select aria-label="Status" value={st} onChange={(e) => { setSt(e.target.value); setPage(0); }}><option value="">{tr("All statuses", "ಎಲ್ಲಾ ಸ್ಥಿತಿ")}</option>{["Submitted", "Under Review", "Shortlisted", "Approved", "Not Selected", "Withdrawn"].map((s) => <option key={s}>{s}</option>)}</Select><Select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value)}><option value="date">{tr("Newest first", "ಹೊಸದು ಮೊದಲು")}</option><option value="name">{tr("Name A–Z", "ಹೆಸರು A–Z")}</option></Select></div>
     <QState q={data} isEmpty={(d) => d.length === 0} empty={<Empty title={tr("No applications in your scope", "ನಿಮ್ಮ ವ್ಯಾಪ್ತಿಯಲ್ಲಿ ಅರ್ಜಿಗಳಿಲ್ಲ")} />}>{(all) => { const f = all.filter((a) => (!st || a.status === st) && (!q || (a.name + a.id).toLowerCase().includes(q.toLowerCase()))).sort((a, b) => (sort === "name" ? a.name.localeCompare(b.name) : b.submittedAt.localeCompare(a.submittedAt))); const pages = Math.max(1, Math.ceil(f.length / PAGE)); const rows = f.slice(page * PAGE, page * PAGE + PAGE);

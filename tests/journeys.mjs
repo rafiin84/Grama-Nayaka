@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-const base = "http://localhost:3111"; const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage();
+const base = process.env.BASE ?? "http://localhost:3100"; const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage();
 const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
 const step = async (n, fn) => { try { await fn(); console.log("ok  ", n); } catch (e) { console.log("FAIL", n, String(e).split("\n")[0]); } };
 await p.goto(base); await p.evaluate(() => localStorage.setItem("gn-prefs", JSON.stringify({ state: { lang: "en", role: "participant", stage: "lms" }, version: 0 })));

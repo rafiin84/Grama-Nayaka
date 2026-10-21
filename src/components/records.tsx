@@ -5,18 +5,19 @@ import { Eye, EyeSlash, Plus } from "@phosphor-icons/react";
 import { Badge, Button, Card, Check, DemoNote, Empty, Field, Input, Modal, PageHeader, QState, Select, Stat, Table, Td, Textarea, Tabs, statusTone } from "@/components/ui";
 import { api, useAct, useMock } from "@/lib/api";
 import { getDb, inScope } from "@/lib/db";
+import { useCan } from "@/lib/useCan";
 import { usePrefs } from "@/lib/store";
 import { useT } from "@/lib/useT";
 import { gps } from "@/lib/seed-geo";
 import { districtOf } from "@/lib/seed-geo";
 
-const canSeeVoters = (r: string) => r !== "participant" && r !== "trainer";
+const canSeeVoters = (r: string) => ["state", "district", "ac", "local"].includes(r);
 export function Records({ admin }: { admin?: boolean }) {
   const { tr } = useT(); const act = useAct(); const role = usePrefs((s) => s.role); const base = admin ? "/admin/records" : "/app/community";
   const [tab, setTab] = useState<"res" | "voter">("res"); const [add, setAdd] = useState(false); const [qs, setQs] = useState(""); const [nf, setNf] = useState("");
   const [form, setForm] = useState({ name: "", locality: "", gp: "Hosahalli GP", language: "kn", contactPref: "Not provided", notes: "", ack: false });
   const q = useMock(["residents", admin], () => { const d = getDb(); return { rs: d.residents.filter((r) => (admin ? inScope(role, r) : r.gp === "Hosahalli GP" || r.source.includes("P-1042"))), grievances: d.grievances.length, voters: d.voters.filter((v) => { const r = d.residents.find((x) => x.id === v.residentId); return r && inScope(role, r); }), residentsAll: d.residents }; });
-  const canAdd = !admin || role === "local";
+  const { can } = useCan(); const canAdd = !admin || can("community", "create");
   return (<div className="space-y-4">
     <PageHeader title={tr("Community directory", "ಸಮುದಾಯ ಡೈರೆಕ್ಟರಿ")} sub={tr("A community-service directory — not the electoral roll and not official voter registration. Only people you are authorised for are shown.", "ಸಮುದಾಯ ಸೇವಾ ಡೈರೆಕ್ಟರಿ — ಮತದಾರರ ಪಟ್ಟಿಯಲ್ಲ, ಅಧಿಕೃತ ಮತದಾರ ನೋಂದಣಿಯಲ್ಲ. ನಿಮಗೆ ಅಧಿಕಾರವಿರುವವರನ್ನು ಮಾತ್ರ ತೋರಿಸಲಾಗುತ್ತದೆ.")} actions={canAdd && <Button onClick={() => setAdd(true)}><Plus />{tr("Add resident", "ನಿವಾಸಿ ಸೇರಿಸಿ")}</Button>} />
     {admin && canSeeVoters(role) && <Tabs tabs={[{ id: "res", label: tr("Residents", "ನಿವಾಸಿಗಳು") }, { id: "voter", label: tr("Voter-related records (restricted)", "ಮತದಾರ ಸಂಬಂಧಿತ (ನಿರ್ಬಂಧಿತ)") }]} value={tab} onChange={setTab} />}

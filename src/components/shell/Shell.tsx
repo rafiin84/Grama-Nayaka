@@ -10,6 +10,8 @@ import { canOpen, homeFor, navFor } from "@/lib/nav";
 import { roleUsers, useDb } from "@/lib/db";
 import type { Role } from "@/lib/types";
 import { LangSwitch, ThemeToggle } from "./Controls";
+import { ScopeSwitcher } from "./ScopeSwitcher";
+import { actorName, scopeLabel } from "@/lib/scope";
 import { cn } from "@/lib/utils";
 import { Button, Card } from "@/components/ui";
 
@@ -17,7 +19,7 @@ const Icon = ({ name, ...p }: { name: string; size?: number; weight?: "fill" | "
   const C = (Ph as unknown as Record<string, React.ComponentType<{ size?: number; weight?: string }>>)[name] ?? Ph.Circle;
   return <C {...p} />;
 };
-const roles: Role[] = ["participant", "trainer", "local", "ac", "district", "state"];
+const roles: Role[] = ["participant", "trainer", "coordinator", "grievance", "content", "local", "ac", "district", "state"];
 
 function Offline() {
   const { tr } = useT();
@@ -34,12 +36,12 @@ function ProfileMenu() {
   return (
     <div className="relative">
       <button aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-sm">
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-fg">{roleUsers[role].name[0]}</span>
-        <span className="hidden sm:inline">{roleUsers[role].name}</span>
+        <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-fg">{actorName(role)[0]}</span>
+        <span className="hidden sm:inline">{actorName(role)}</span>
       </button>
       {open && (
         <div role="menu" className="absolute right-0 z-40 mt-2 w-72 rounded-2xl border border-border bg-card p-3 shadow-lg">
-          <p className="text-sm font-semibold">{roleUsers[role].name}</p><p className="mb-2 text-xs text-muted">{t.roles[role]} · {roleUsers[role].label}</p>
+          <p className="text-sm font-semibold">{actorName(role)}</p><p className="mb-2 text-xs text-muted">{t.roles[role]} · {role === "participant" ? roleUsers[role].label : scopeLabel(role, tr)}</p>
           <p className="mb-1 rounded-lg bg-saffron/15 px-2 py-1 text-xs font-semibold text-warning">{t.roleSwitcher}</p>
           <div className="grid gap-1">
             {roles.map((r) => (
@@ -55,7 +57,7 @@ function ProfileMenu() {
 
 function SearchBox() {
   const { tr, lang } = useT(); const role = usePrefs((s) => s.role); const router = useRouter();
-  const [q, setQ] = useState(""); const nav = navFor(role);
+  const rbac = useDb((s) => s.rbac); const [q, setQ] = useState(""); const nav = navFor(role, rbac);
   const people = useDb((s) => s.participants); const apps = useDb((s) => s.applications); const courses = useDb((s) => s.courses);
   const results = useMemo(() => {
     const k = q.trim().toLowerCase(); if (!k) return [];
@@ -81,9 +83,9 @@ export function Shell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => setMounted(true), []);
   useEffect(() => { setDrawer(false); setMore(false); }, [path]);
-  const nav = navFor(role); const isP = role === "participant";
+  const rbac = useDb((s) => s.rbac); const nav = navFor(role, rbac); const isP = role === "participant";
   const label = (n: { en: string; kn: string }) => (lang === "kn" ? n.kn : n.en);
-  const allowed = mounted ? canOpen(role, path) : true;
+  const allowed = mounted ? canOpen(role, path, rbac) : true;
   const crumbs = path.split("/").filter(Boolean);
   const notifHref = isP ? "/app/notifications" : role === "trainer" ? "/admin/notifications" : "/admin";
   if (!mounted) return <div className="min-h-screen" />;
@@ -106,7 +108,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <header className="no-print sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/90 px-3 py-2 backdrop-blur md:px-6">
           {!isP && <button aria-label="Menu" className="rounded-full p-2 md:hidden" onClick={() => setDrawer(true)}><Ph.List size={22} /></button>}
           <Link href="/" className={cn("font-bold text-primary md:hidden", !isP && "hidden sm:block")}>{t.appName}</Link>
-          {!isP && <div className="hidden text-sm text-muted md:block" aria-label="Scope">{tr("Scope", "ವ್ಯಾಪ್ತಿ")}: <span className="font-semibold text-foreground">{roleUsers[role].label}</span></div>}
+          {!isP && <ScopeSwitcher className="hidden max-w-[22rem] md:block" />}
           <div className="flex-1" />
           <SearchBox />
           <LangSwitch /><ThemeToggle />
@@ -114,6 +116,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <ProfileMenu />
         </header>
         <div className="bg-deep px-3 py-1 text-center text-[11px] text-white md:hidden">{t.demoBanner}</div>
+        {!isP && <div className="border-b border-border bg-background px-3 py-2 md:hidden"><ScopeSwitcher /></div>}
 
         {!isP && <nav aria-label="Breadcrumb" className="hidden px-6 pt-4 text-xs text-muted md:block">{crumbs.map((c, i) => <span key={i}>{i > 0 && " / "}{i === crumbs.length - 1 ? <span className="text-foreground">{c}</span> : c}</span>)}</nav>}
 

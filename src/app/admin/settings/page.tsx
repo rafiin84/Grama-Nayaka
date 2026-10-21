@@ -4,12 +4,12 @@ import { useTheme } from "next-themes";
 import { Button, Card, Confirm, Field, Input, PageHeader, QState, Select } from "@/components/ui";
 import { api, useAct, useMock } from "@/lib/api";
 import { getDb } from "@/lib/db";
-import { usePrefs } from "@/lib/store";
+import { useCan } from "@/lib/useCan";
 import { acs, districts, gps, taluks } from "@/lib/seed-geo";
 import { useT } from "@/lib/useT";
 
 export default function Settings() {
-  const { tr } = useT(); const act = useAct(); const role = usePrefs((s) => s.role); const mgr = role === "state"; const { theme, setTheme } = useTheme(); const [reset, setReset] = useState(false); const q = useMock(["settings"], () => getDb().settings); const [err, setErr] = useState("");
+  const { tr } = useT(); const act = useAct(); const { can, changeSettings } = useCan(); const mgr = changeSettings && can("settings", "edit"); const { theme, setTheme } = useTheme(); const [reset, setReset] = useState(false); const q = useMock(["settings"], () => getDb().settings); const [err, setErr] = useState("");
   const num = (k: "passThreshold" | "videoThreshold", v: number) => { if (v < 40 || v > 100) return setErr(tr("Enter 40–100", "40–100 ನೀಡಿ")); setErr(""); act(() => api.settings.set({ [k]: v }), tr("Saved and audited", "ಉಳಿಸಿ ಆಡಿಟ್ ಮಾಡಲಾಗಿದೆ")); };
   return (<div className="space-y-4"><PageHeader title={tr("Settings", "ಸೆಟ್ಟಿಂಗ್‌ಗಳು")} />
     <QState q={q}>{(s) => (<>

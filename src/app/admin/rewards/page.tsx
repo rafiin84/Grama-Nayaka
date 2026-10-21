@@ -3,13 +3,13 @@ import { useState } from "react";
 import { Badge, Button, Card, DemoNote, Field, Input, Modal, PageHeader, QState, Select, Table, Tabs, Td, Textarea, statusTone } from "@/components/ui";
 import { api, useAct, useMock } from "@/lib/api";
 import { getDb } from "@/lib/db";
-import { usePrefs } from "@/lib/store";
+import { useCan } from "@/lib/useCan";
 import { rewardCatalog } from "@/lib/seed";
 import { useT } from "@/lib/useT";
 import { participants } from "@/lib/seed";
 
 export default function RewardsAdmin() {
-  const { tr, loc } = useT(); const act = useAct(); const role = usePrefs((s) => s.role); const mgr = role === "state"; const [tab, setTab] = useState<"rules" | "ledger" | "redeem">("rules"); const [edit, setEdit] = useState<string | null>(null); const [pts, setPts] = useState(0); const [cap, setCap] = useState(0); const [adj, setAdj] = useState(false); const [a, setA] = useState({ pid: "P-1042", points: 10, reason: "" });
+  const { tr, loc } = useT(); const act = useAct(); const { can } = useCan(); const mgr = can("rewards", "edit"); const [tab, setTab] = useState<"rules" | "ledger" | "redeem">("rules"); const [edit, setEdit] = useState<string | null>(null); const [pts, setPts] = useState(0); const [cap, setCap] = useState(0); const [adj, setAdj] = useState(false); const [a, setA] = useState({ pid: "P-1042", points: 10, reason: "" });
   const q = useMock(["rewards-admin"], () => { const d = getDb(); return { rules: d.rules, ledger: d.ledger, red: d.redemptions }; });
   return (<div className="space-y-4"><PageHeader title={tr("Rewards & Recognition", "ಪುರಸ್ಕಾರ ಮತ್ತು ಮನ್ನಣೆ")} sub={tr("Quality-aware: capped, verified, de-duplicated. No points are attached to the number of voter records collected.", "ಗುಣಮಟ್ಟ ಆಧಾರಿತ: ಮಿತಿ, ಪರಿಶೀಲನೆ, ನಕಲು ತಡೆ. ಸಂಗ್ರಹಿಸಿದ ಮತದಾರ ದಾಖಲೆಗಳ ಸಂಖ್ಯೆಗೆ ಅಂಕವಿಲ್ಲ.")} actions={mgr && <Button variant="secondary" onClick={() => setAdj(true)}>{tr("Manual adjustment", "ಕೈಯಾರೆ ಹೊಂದಾಣಿಕೆ")}</Button>} />
     <Tabs tabs={[{ id: "rules", label: tr("Rules", "ನಿಯಮಗಳು") }, { id: "ledger", label: tr("Ledger & validation", "ಲೆಡ್ಜರ್ ಮತ್ತು ದೃಢೀಕರಣ") }, { id: "redeem", label: tr("Redemptions", "ರಿಡೆಂಪ್ಶನ್") }]} value={tab} onChange={setTab} />

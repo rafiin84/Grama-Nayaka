@@ -10,6 +10,7 @@ npm install --legacy-peer-deps   # @hookform/resolvers has an optional-peer conf
 npm run dev                      # http://localhost:3000
 npm run build && npm start
 npm test                         # unit tests (vitest)
+npm run test:admin               # admin e2e (needs dev server on :3100)
 npm start -- -p 3111 & npm run test:smoke && npm run test:e2e   # Playwright (needs `npx playwright install chromium`)
 ```
 
@@ -22,6 +23,36 @@ npm start -- -p 3111 & npm run test:smoke && npm run test:e2e   # Playwright (ne
 ## What is built
 Public landing, registration + consent + OTP simulation, 7-step application with save/resume; application status; participant home, learning (catalog, course, video/reading/MCQ/recorded-answer/assignment), community directory (residents), grievances (list, create, detail with full state machine, follow-up planner), AI assistant (ask, pathway, draft studio), events, rewards (impact, leaderboard, redemption), certificates (printable, KN/EN, sample-labelled), notifications, profile (consent receipts, withdrawal, rights requests), help.
 Admin/trainer: overview (KPIs, funnel, capacity, grievance charts with table views), applications (manual decisions only), participants, training operations (cycle, 3 cohorts × 3 classes, capacity 30–100, conflict checks, roster assign/move, attendance with audited corrections), LMS admin, community records + restricted voter-related records, grievances, events (create/edit/cancel), rewards rules/ledger/redemptions, reports, templates, audit log, settings.
+
+## Admin panel (integrated into the existing app)
+Reachable from the demo role switcher (State = Super Admin). Pages: **Dashboard** (`/admin`), **Users & Volunteers** (`/admin/users`), **Village Enrollment** (`/admin/villages`), **Roles & Permissions** (`/admin/roles`), **Training Operations** (`/admin/training`), plus the existing Applications, Participants, LMS, Community Records, Grievances, Events, Rewards, Reports, Templates, Audit Log and Settings.
+- **Dashboard:** volunteers registered/trained/pending, sessions, villages enrolled/pending, districts/blocks/Gram Panchayats, grievances (submitted, pending action, awaiting official response, closed), learning resources, active/inactive users, trends, pending approvals, alerts and recent activity. Filters: district, block/taluk, Gram Panchayat, village, date range, training status, grievance status. All values are computed from the app's records in `src/lib/adminStats.ts`; only the 1,00,000 volunteer target is a fixed number.
+- **Users & Volunteers:** add/edit/view, assign location, assign roles (a role can only assign roles below its own; only Super Admin grants Super Admin; the last active Super Admin is protected), activate/deactivate/suspend with reason, start a password reset (mock, no passwords exist), soft delete + restore (records preserved), CSV import with per-row validation and duplicate detection, CSV export, duplicate review, training history / villages / grievance activity per volunteer.
+- **Roles & Permissions:** editable matrix (view/create/edit/delete/approve/export per module, manage-users and change-settings flags, data scope) for Super Admin, District Admin, Block Admin, Training Coordinator, Trainer, Grievance Manager, Content Manager and Volunteer. Navigation, route access and action buttons follow the matrix (`src/lib/rbac.ts`). Only Super Admin can edit it.
+- **Village Enrollment:** add/edit/enroll/archive/delete villages under a Gram Panchayat and assign volunteers.
+- **Training:** create/edit/reschedule/cancel/delete sessions with location, capacity, trainer and coordinator, room/trainer conflict checks, registered/attended/completed/pending counts, certification status, materials (file name and size only), and session-, district- and block-wise reports with CSV download.
+
+### Admin panel limitations
+- No backend or real authentication exists in this prototype, so there is no real login, password or last-login tracking (the "last login" column is seed data). Roles and permissions are a **UI simulation**; production must enforce them on a server.
+- "Real-time" means live against this browser's saved demo data. Each browser has its own data; Settings → Reset restores the seed.
+- CSV only for import (save Excel files as CSV). Training materials record the file name and size; nothing is uploaded. Training duration is fixed at 2 days because attendance is modelled per day (day 1 / day 2).
+- The requirement text was cut off at section 5, so reports beyond training (and anything after) were not specified.
+
+## Admin add / edit / manage screens
+Every list has a working **Add**, **View**, **Edit**, **Delete (with confirmation)**, search/filter and, where it makes sense, **bulk actions**, with field-level validation and success/error messages. Forms are full pages with unsaved-changes protection.
+- **Users & Volunteers:** `/admin/users/new`, `/admin/users/[id]`, `/admin/users/[id]/edit`. Fields: name, mobile, email, date of birth, address, district/block/Gram Panchayat, village, assigned training session, role, account status; training status is derived from the session and attendance. Profile actions: change role, assign villages, activate/deactivate/suspend (reason required), issue a new activation code, delete/restore. Bulk: activate, deactivate/suspend, register for a session, delete; CSV import/export.
+- **Credentials:** there is no authentication system in this prototype and no password is ever created. A new account gets an ID and a **one-time activation code** shown once; only its SHA-256 hash and expiry are stored (`src/lib/credentials.ts`). A real deployment must issue activation links through its own secure authentication system.
+- **Training:** `/admin/training/new`, `/admin/training/[id]` (view), `/admin/training/[id]/edit`. Save draft / Publish / Update / Cancel; description, dates (end date is calculated: the programme is fixed at 2 days), location, region, trainer, coordinator, capacity 30–100, registration deadline, supporting documents. Draft sessions cannot take registrations. Detail page: assign trainer, bulk register volunteers, record attendance, mark completion (approved exception, reason required), upload materials, reschedule, cancel.
+- **Learning Resources:** `/admin/resources` (+ `/new`, `/[id]`, `/[id]/edit`, Categories tab). Upload a video, PDF or document, or add a YouTube/video/website link; thumbnail, language, audience, display order, status (Draft/Published/Scheduled/Archived) and publish date. Volunteers see only live resources aimed at them in **My Learning → Resource library**.
+- **Files and "the database":** uploads and all records live **in this browser** (IndexedDB + local storage). There is no server or database, so nothing is shared between users or devices. The mock API in `src/lib/api.ts` is the single place to replace with real backend calls (for example Zoho Catalyst Data Store, File Store and Authentication).
+
+## Home-page media and credits
+- **Section photos** (`public/images/sections/`) and the **sample video** (`public/videos/`) are freely licensed files from Wikimedia Commons (CC BY / CC BY-SA). Their licences require attribution, so every photo carries a visible credit link and the footer has a "Photo and video credits" list. Details live in `src/lib/credits.ts`. Resized/cropped copies are adaptations; CC BY-SA applies to those images, not to this app's code.
+- **Training video player** (`TrainingVideoPlayer`, `src/components/Media.tsx`): click-to-play (nothing downloads until play), accessible, shows an error message if the file cannot play. The playlist is `src/lib/trainingVideos.ts`. The bundled clip ("Women in Panchayat", Indian Diplomacy, CC BY 3.0, 26 MB WebM) is a **sample documentary, not footage of this programme's training**. To show your own training recordings, add MP4/WebM files under `public/videos/` (or a `youtubeId`) to that list and remove `sample: true`.
+- The hero image is the owner-supplied illustrative image (`public/hero.jpg`).
+
+## Scope switcher
+The top bar shows **Scope: <current value> ⌄** for every non-participant role; click it to change the scope in a dropdown right there (search, keyboard arrows/Esc, selected item ticked, saved across reloads). The choices depend on the role: Super Admin and the other state-wide roles can pick all of Karnataka, a district or a Gram Panchayat; a District Admin can narrow to Gram Panchayats in their district; a Block Admin (AC) to Gram Panchayats in their constituency; a local Block Admin is locked to one Gram Panchayat; a Trainer chooses which trainer they are acting as. The selection narrows every list, count and report through `inScope()` (`src/lib/scope.ts`). It is a UI simulation, not a security boundary.
 
 ## Architecture
 - Next.js 15 (App Router), React 19, strict TypeScript, Tailwind v4, Framer Motion, Phosphor icons, Zustand, TanStack Query, React Hook Form + Zod, Recharts.

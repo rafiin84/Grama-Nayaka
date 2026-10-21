@@ -3,13 +3,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Warning } from "@phosphor-icons/react";
-import { Badge, Button, Card, Confirm, DemoNote, Empty, Field, Input, Modal, PageHeader, QState, Select, Stat, Table, Td, Textarea, statusTone } from "@/components/ui";
+import { Badge, Button, Card, Confirm, DemoNote, Empty, Field, Input, Modal, PageHeader, QState, Select, Table, Td, Textarea, statusTone } from "@/components/ui";
 import { api, useAct, useMock } from "@/lib/api";
 import { getDb, inScope, roleUsers } from "@/lib/db";
 import { GRIEVANCE_CATEGORIES } from "@/lib/seed-geo";
 import { usePrefs } from "@/lib/store";
 import { useT } from "@/lib/useT";
 import { today } from "@/lib/derive";
+import { cn } from "@/lib/utils";
 import { ME, participants } from "@/lib/seed";
 import type { GStatus } from "@/lib/types";
 
@@ -28,7 +29,9 @@ export function GrievanceList({ admin }: { admin?: boolean }) {
         const list = all.filter((g) => (!f.status || g.status === f.status) && (!f.cat || g.category === f.cat) && (!f.urg || g.urgency === f.urg) && (!f.q || (g.title + g.id + g.locality).toLowerCase().includes(f.q.toLowerCase())));
         const due = [...all].filter((g) => g.status !== "Closed").sort((a, b) => a.followUpDate.localeCompare(b.followUpDate));
         return (<>
-          <div className="grid grid-cols-3 gap-2 lg:grid-cols-6">{(["Open", "In Progress", "Follow-up Due", "Escalated", "Closed", "Reopened"] as GStatus[]).map((s) => <button key={s} onClick={() => setF({ ...f, status: f.status === s ? "" : s })} className="text-left"><Stat label={s} value={all.filter((g) => g.status === s).length} /></button>)}</div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">{(["Open", "In Progress", "Follow-up Due", "Escalated", "Closed", "Reopened"] as GStatus[]).map((s) => { const on = f.status === s; const n = all.filter((g) => g.status === s).length; return (
+            <button key={s} type="button" aria-pressed={on} onClick={() => setF({ ...f, status: on ? "" : s })} className={cn("rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md", on ? "border-transparent bg-primary text-primary-fg shadow-md" : "border-primary/20 bg-accent-soft")}>
+              <span className={cn("block text-sm", on ? "text-primary-fg/85" : "text-muted")}>{s}</span><span className={cn("mt-1 block text-2xl font-bold", !on && "text-primary")}>{n}</span></button>); })}</div>
           <div className="flex gap-2"><Button size="sm" variant={view === "cases" ? "primary" : "secondary"} onClick={() => setView("cases")}>{tr("Cases", "ಪ್ರಕರಣಗಳು")}</Button><Button size="sm" variant={view === "followups" ? "primary" : "secondary"} onClick={() => setView("followups")}>{tr("Follow-up planner", "ಅನುಸರಣಾ ಯೋಜನೆ")}</Button></div>
           {view === "cases" ? <>
             <div className="grid gap-2 sm:grid-cols-4"><Input aria-label="Search" placeholder={tr("Search", "ಹುಡುಕಿ")} value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} />

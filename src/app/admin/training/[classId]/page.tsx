@@ -1,3 +1,3 @@
 "use client";
-import { ClassDetail } from "@/components/training";
-export default function Page() { return <ClassDetail />; }
+import { SessionDetail } from "@/components/SessionDetail";
+export default function Page() { return <SessionDetail />; }

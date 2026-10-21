@@ -18,7 +18,10 @@ export const adminNav: NavItem[] = [
   { href: "/admin", en: "Overview", kn: "ಅವಲೋಕನ", icon: "SquaresFour" },
   { href: "/admin/applications", en: "Applications", kn: "ಅರ್ಜಿಗಳು", icon: "ClipboardText" },
   { href: "/admin/participants", en: "Participants", kn: "ಭಾಗವಹಿಸುವವರು", icon: "Users" },
+  { href: "/admin/users", en: "Users & Volunteers", kn: "ಬಳಕೆದಾರರು ಮತ್ತು ಸ್ವಯಂಸೇವಕರು", icon: "UserGear" },
+  { href: "/admin/villages", en: "Village Enrollment", kn: "ಗ್ರಾಮ ನೋಂದಣಿ", icon: "MapPinLine" },
   { href: "/admin/training", en: "Training Operations", kn: "ತರಬೇತಿ ನಿರ್ವಹಣೆ", icon: "ChalkboardTeacher" },
+  { href: "/admin/resources", en: "Learning Resources", kn: "ಕಲಿಕಾ ಸಂಪನ್ಮೂಲಗಳು", icon: "BookBookmark" },
   { href: "/admin/lms", en: "LMS & Assessments", kn: "LMS ಮತ್ತು ಮೌಲ್ಯಮಾಪನ", icon: "GraduationCap" },
   { href: "/admin/records", en: "Community Records", kn: "ಸಮುದಾಯ ದಾಖಲೆಗಳು", icon: "AddressBook" },
   { href: "/admin/grievances", en: "Grievances", kn: "ದೂರುಗಳು", icon: "ChatsCircle" },
@@ -26,6 +29,7 @@ export const adminNav: NavItem[] = [
   { href: "/admin/rewards", en: "Rewards & Recognition", kn: "ಪುರಸ್ಕಾರ ಮತ್ತು ಮನ್ನಣೆ", icon: "Trophy" },
   { href: "/admin/reports", en: "Reports & Analytics", kn: "ವರದಿಗಳು ಮತ್ತು ವಿಶ್ಲೇಷಣೆ", icon: "ChartBar" },
   { href: "/admin/templates", en: "Content & WhatsApp Templates", kn: "ವಿಷಯ ಮತ್ತು WhatsApp ಟೆಂಪ್ಲೇಟ್", icon: "ChatText" },
+  { href: "/admin/roles", en: "Roles & Permissions", kn: "ಪಾತ್ರ ಮತ್ತು ಅನುಮತಿ", icon: "ShieldCheck" },
   { href: "/admin/audit", en: "Audit Log", kn: "ಆಡಿಟ್ ಲಾಗ್", icon: "ListMagnifyingGlass" },
   { href: "/admin/settings", en: "Settings", kn: "ಸೆಟ್ಟಿಂಗ್‌ಗಳು", icon: "Gear" },
 ];
@@ -36,20 +40,18 @@ export const trainerNav: NavItem[] = [
   { href: "/admin/progress", en: "Learner Progress", kn: "ಕಲಿಕೆಯ ಪ್ರಗತಿ", icon: "ChartLineUp" },
   { href: "/admin/notifications", en: "Notifications", kn: "ಅಧಿಸೂಚನೆಗಳು", icon: "Bell" },
 ];
-// Which admin routes each role may open (UI simulation only; production must enforce on a server).
-const adminAll = adminNav.map((n) => n.href);
-export const allowedRoutes: Record<Role, string[]> = {
-  state: [...adminAll, "/admin/attendance"],
-  district: adminAll.filter((h) => h !== "/admin/settings" && h !== "/admin/templates").concat("/admin/attendance"),
-  ac: ["/admin", "/admin/applications", "/admin/participants", "/admin/training", "/admin/records", "/admin/grievances", "/admin/events", "/admin/reports", "/admin/attendance"],
-  local: ["/admin", "/admin/participants", "/admin/records", "/admin/grievances", "/admin/events", "/admin/attendance"],
-  trainer: trainerNav.map((n) => n.href),
-  participant: [],
-};
-export const navFor = (r: Role): NavItem[] => (r === "participant" ? participantNav : r === "trainer" ? trainerNav : adminNav.filter((n) => allowedRoutes[r].includes(n.href)));
+// Admin navigation is derived from the permission matrix (rbac). Frontend checks are a UI simulation only.
+import type { RbacRole, RolePerm } from "./types";
+import { moduleForPath, roleOfSession } from "./rbac";
+type Matrix = Record<RbacRole, RolePerm>;
+const moduleOfHref: Record<string, ReturnType<typeof moduleForPath>> = Object.fromEntries(adminNav.map((n) => [n.href, moduleForPath(n.href)]));
+export const navFor = (r: Role, rbac: Matrix): NavItem[] => (r === "participant" ? participantNav : r === "trainer" ? trainerNav : adminNav.filter((n) => { const m = moduleOfHref[n.href]; return m && m !== "open" && rbac[roleOfSession[r]]?.modules[m]?.includes("view"); }));
 export const homeFor = (r: Role) => (r === "participant" ? "/app" : r === "trainer" ? "/admin/training" : "/admin");
-export const canOpen = (r: Role, path: string) => {
+export const canOpen = (r: Role, path: string, rbac: Matrix) => {
   if (r === "participant") return path.startsWith("/app");
   if (!path.startsWith("/admin")) return false;
-  return allowedRoutes[r].some((a) => (a === "/admin" ? path === "/admin" : path === a || path.startsWith(a + "/")));
+  const m = moduleForPath(path);
+  if (m === "open") return true;
+  if (!m) return false;
+  return !!rbac[roleOfSession[r]]?.modules[m]?.includes("view");
 };

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { chat, pathway, compose, VERIFY } from "@/lib/ai";
 import { level } from "@/lib/derive";
 import { canOpen } from "@/lib/nav";
+import { defaultRbac } from "@/lib/rbac";
 import { acs, taluks } from "@/lib/seed-geo";
 import { classes } from "@/lib/seed";
 
@@ -11,9 +12,9 @@ describe("AI mock", () => {
   it("drafts in the selected language", () => { expect(compose("LMS reminder", "Warm", "kn", { issue: "A", location: "", date: "", step: "", sender: "S" })).toContain("ನಮಸ್ಕಾರ"); });
 });
 describe("permissions", () => {
-  it("trainer cannot open records or settings", () => { expect(canOpen("trainer", "/admin/records")).toBe(false); expect(canOpen("trainer", "/admin/attendance")).toBe(true); });
-  it("participant cannot open admin", () => { expect(canOpen("participant", "/admin")).toBe(false); });
-  it("only state opens settings", () => { expect(canOpen("state", "/admin/settings")).toBe(true); expect(canOpen("local", "/admin/settings")).toBe(false); });
+  it("trainer cannot open records or settings", () => { expect(canOpen("trainer", "/admin/records", defaultRbac())).toBe(false); expect(canOpen("trainer", "/admin/attendance", defaultRbac())).toBe(true); });
+  it("participant cannot open admin", () => { expect(canOpen("participant", "/admin", defaultRbac())).toBe(false); });
+  it("only state opens settings", () => { expect(canOpen("state", "/admin/settings", defaultRbac())).toBe(true); expect(canOpen("local", "/admin/settings", defaultRbac())).toBe(false); });
 });
 describe("data model", () => {
   it("class capacities stay within 30–100", () => { classes.forEach((c) => { expect(c.capacity).toBeGreaterThanOrEqual(30); expect(c.capacity).toBeLessThanOrEqual(100); expect(c.roster.length).toBeLessThanOrEqual(c.capacity); }); });
