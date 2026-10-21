@@ -68,15 +68,17 @@ export default function Landing() {
       </header>
 
       {/* A. Hero: full-screen image with the copy and headline figures on top */}
-      <section className="relative isolate flex min-h-[max(600px,calc(100svh-96px))] flex-col overflow-hidden bg-neutral-900 text-white">
-        <Image src="/hero.jpg" alt={tr("A young volunteer on a village street at sunset", "ಸೂರ್ಯಾಸ್ತದ ವೇಳೆ ಹಳ್ಳಿಯ ರಸ್ತೆಯಲ್ಲಿ ಯುವ ಸ್ವಯಂಸೇವಕ")} fill priority sizes="100vw" className="-z-20 object-cover object-[68%_22%] md:object-[62%_24%]" />
-        <div aria-hidden className="absolute inset-y-0 left-0 -z-10 w-full bg-gradient-to-r from-black/70 via-black/40 to-transparent backdrop-blur-[3px] max-md:bg-black/55 md:w-[70%] md:[-webkit-mask-image:linear-gradient(to_right,#000_55%,transparent)] md:[mask-image:linear-gradient(to_right,#000_55%,transparent)]" />
-        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/55 via-transparent to-black/10" />
+      <section className="relative isolate flex min-h-[max(600px,calc(100svh-96px))] flex-col overflow-hidden bg-neutral-900 text-white max-md:min-h-0">
+        {/* Phones: the photo sits above the copy, unobscured */}
+        <div className="relative aspect-[4/3] w-full overflow-hidden md:hidden"><Image src="/hero.jpg" alt={tr("A young volunteer on a village street at sunset", "ಸೂರ್ಯಾಸ್ತದ ವೇಳೆ ಹಳ್ಳಿಯ ರಸ್ತೆಯಲ್ಲಿ ಯುವ ಸ್ವಯಂಸೇವಕ")} fill sizes="100vw" className="object-cover object-[62%_30%]" /><div aria-hidden className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" /><div aria-hidden className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent" /><h1 className="absolute inset-x-0 bottom-0 max-w-[85%] px-4 pb-5 text-[28px] font-bold leading-[1.15] text-white drop-shadow">{tr("Grama Nayaka – Empowering Villages, Enabling Change", "ಗ್ರಾಮ ನಾಯಕ – ಗ್ರಾಮಗಳ ಸಬಲೀಕರಣ, ಬದಲಾವಣೆಗೆ ಶಕ್ತಿ")}</h1></div>
+        <Image src="/hero.jpg" alt={tr("A young volunteer on a village street at sunset", "ಸೂರ್ಯಾಸ್ತದ ವೇಳೆ ಹಳ್ಳಿಯ ರಸ್ತೆಯಲ್ಲಿ ಯುವ ಸ್ವಯಂಸೇವಕ")} fill priority sizes="100vw" className="-z-20 object-cover max-md:hidden object-[68%_22%] md:object-[62%_24%]" />
+        <div aria-hidden className="absolute inset-y-0 left-0 -z-10 w-full max-md:hidden bg-gradient-to-r from-black/70 via-black/40 to-transparent backdrop-blur-[3px] max-md:bg-black/55 md:w-[70%] md:[-webkit-mask-image:linear-gradient(to_right,#000_55%,transparent)] md:[mask-image:linear-gradient(to_right,#000_55%,transparent)]" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/55 via-transparent to-black/10 max-md:hidden" />
         <span className="absolute right-4 top-4 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white/80 backdrop-blur md:right-6">{tr("Illustrative image", "ವಿವರಣಾತ್ಮಕ ಚಿತ್ರ")}</span>
 
-        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pb-8 pt-14 md:pt-10">
+        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pb-8 pt-14 max-md:pt-6 md:pt-10">
           <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-sm backdrop-blur"><span className="h-2 w-2 rounded-full bg-saffron" />{tr(`${nf(F.gramaNayakas)} Grama Nayakas · ${nf(F.villages)} villages`, `${nf(F.gramaNayakas)} ಗ್ರಾಮ ನಾಯಕರು · ${nf(F.villages)} ಗ್ರಾಮಗಳು`)}</span>
-          <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-[1.1] md:text-6xl lg:text-[64px]">{tr("Grama Nayaka – Empowering Villages, Enabling Change", "ಗ್ರಾಮ ನಾಯಕ – ಗ್ರಾಮಗಳ ಸಬಲೀಕರಣ, ಬದಲಾವಣೆಗೆ ಶಕ್ತಿ")}</h1>
+          <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-[1.1] max-md:hidden md:text-6xl lg:text-[64px]">{tr("Grama Nayaka – Empowering Villages, Enabling Change", "ಗ್ರಾಮ ನಾಯಕ – ಗ್ರಾಮಗಳ ಸಬಲೀಕರಣ, ಬದಲಾವಣೆಗೆ ಶಕ್ತಿ")}</h1>
           <p className="mt-5 max-w-xl text-base text-white/85 md:text-lg">{tr("Grama Nayaka is a village empowerment initiative that trains volunteers, promotes awareness of Gram Panchayat governance, connects villages to digital resources, and helps communities raise and track grievances until resolution.", "ಗ್ರಾಮ ನಾಯಕ ಒಂದು ಗ್ರಾಮ ಸಬಲೀಕರಣ ಉಪಕ್ರಮ: ಸ್ವಯಂಸೇವಕರಿಗೆ ತರಬೇತಿ, ಗ್ರಾಮ ಪಂಚಾಯತ್ ಆಡಳಿತದ ಅರಿವು, ಹಳ್ಳಿಗಳಿಗೆ ಡಿಜಿಟಲ್ ಸಂಪನ್ಮೂಲ, ಮತ್ತು ದೂರುಗಳನ್ನು ಪರಿಹಾರವಾಗುವವರೆಗೆ ದಾಖಲಿಸಿ ಗಮನಿಸಲು ಸಮುದಾಯಗಳಿಗೆ ನೆರವು.")}</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link href={signed ? homeFor(session!.role) : "/register"} className={cn(btn, "bg-saffron text-[#2b1700]")}>{signed ? tr("Open my home", "ನನ್ನ ಮುಖಪುಟ ತೆರೆಯಿರಿ") : tr("Register", "ನೋಂದಾಯಿಸಿ")} <ArrowRight weight="bold" /></Link>
