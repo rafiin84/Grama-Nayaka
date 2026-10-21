@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Serve images straight from /public: some hosts (e.g. Zoho Catalyst Slate) do not run the /_next/image optimizer.
+  images: { unoptimized: true },
 };
 
 export default nextConfig;
