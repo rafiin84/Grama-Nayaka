@@ -26,7 +26,7 @@ export default function Landing() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4">
-        <section className="grid items-center gap-8 py-10 md:grid-cols-[1fr_280px] md:py-20"><div>
+        <section className="grid items-center gap-8 py-10 md:grid-cols-[1fr_minmax(0,460px)] md:py-20"><div>
           <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-saffron">{t.tagline}</p>
           <h1 className="max-w-3xl text-4xl font-bold leading-tight md:text-6xl">{t.heroTitle}</h1>
           <p className="mt-5 max-w-2xl text-lg text-muted">{t.heroBody}</p>
@@ -40,7 +40,7 @@ export default function Landing() {
           </div>
           <p className="mt-4 max-w-xl text-sm text-muted">{t.nonPartisan}</p>
           </div>
-          <figure aria-label="Portrait" className="mx-auto w-44 md:w-full"><Image src="/portrait.jpg" alt="Tejasvi Surya" width={960} height={1012} priority className="aspect-[4/5] w-full rounded-3xl object-cover" /><figcaption className="mt-2 text-[11px] leading-snug text-muted">Photo: <a className="underline" href="https://commons.wikimedia.org/wiki/File:Tejasvi_Surya.jpg" target="_blank" rel="noreferrer">Sanket Oswal</a>, <a className="underline" href="https://creativecommons.org/licenses/by-sa/4.0" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>, via Wikimedia Commons. Cropped and resized.</figcaption></figure>
+          <figure aria-label="Hero image" className="w-full"><Image src="/hero.jpg" alt="A young community leader standing with arms crossed on a village street at sunset" width={1400} height={933} priority className="aspect-[3/2] w-full rounded-3xl object-cover" /><figcaption className="mt-2 text-[11px] leading-snug text-muted">Illustrative image.</figcaption></figure>
         </section>
 
         <section className="py-8">
