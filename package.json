@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test:admin": "node tests/admin.mjs",
     "test:scope": "node tests/scope.mjs",
-    "test:forms": "node tests/admin-forms.mjs"
+    "test:forms": "node tests/admin-forms.mjs",
+    "test:auth": "node tests/auth.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.0",

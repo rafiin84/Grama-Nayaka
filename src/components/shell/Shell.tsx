@@ -31,7 +31,7 @@ function Offline() {
 
 function ProfileMenu() {
   const { t, tr } = useT();
-  const role = usePrefs((s) => s.role); const setRole = usePrefs((s) => s.setRole); const router = useRouter();
+  const role = usePrefs((s) => s.role); const setRole = usePrefs((s) => s.setRole); const session = usePrefs((s) => s.session); const signOut = usePrefs((s) => s.signOut); const router = useRouter();
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -48,7 +48,8 @@ function ProfileMenu() {
               <button key={r} role="menuitemradio" aria-checked={r === role} onClick={() => { setRole(r); setOpen(false); router.push(homeFor(r)); }} className={cn("rounded-lg px-2 py-1.5 text-left text-sm hover:bg-accent-soft", r === role && "bg-accent-soft font-semibold")}>{t.roles[r]}</button>
             ))}
           </div>
-          <Link href="/" className="mt-2 block rounded-lg px-2 py-1.5 text-sm text-muted hover:bg-accent-soft">{tr("Public home", "ಸಾರ್ವಜನಿಕ ಮುಖಪುಟ")}</Link>
+          <div className="mt-2 border-t border-border pt-2">{session ? <><p className="px-2 pb-1 text-xs text-muted">{tr("Signed in", "ಸೈನ್ ಇನ್")}: {session.name} · {session.phoneMasked}</p><button role="menuitem" onClick={() => { signOut(); setOpen(false); router.push("/"); }} className="block w-full rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-danger hover:bg-accent-soft">{tr("Log out", "ಲಾಗ್ ಔಟ್")}</button></> : <Link href="/signin" className="block rounded-lg px-2 py-1.5 text-sm font-semibold text-primary hover:bg-accent-soft">{tr("Sign in", "ಸೈನ್ ಇನ್")}</Link>}
+          <Link href="/" className="block rounded-lg px-2 py-1.5 text-sm text-muted hover:bg-accent-soft">{tr("Public home", "ಸಾರ್ವಜನಿಕ ಮುಖಪುಟ")}</Link></div>
         </div>
       )}
     </div>
@@ -83,8 +84,9 @@ export function Shell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => setMounted(true), []);
   useEffect(() => { setDrawer(false); setMore(false); }, [path]);
-  const rbac = useDb((s) => s.rbac); const nav = navFor(role, rbac); const isP = role === "participant";
+  const rbac = useDb((s) => s.rbac); const isP = role === "participant"; const sess = usePrefs((st) => st.session); const appl = !!sess?.applicant && isP; const nav = navFor(role, rbac).filter((n) => !appl || ["/app", "/app/status", "/app/help"].includes(n.href));
   const label = (n: { en: string; kn: string }) => (lang === "kn" ? n.kn : n.en);
+  const gated = appl && !["/app", "/app/status", "/app/help"].includes(path);
   const allowed = mounted ? canOpen(role, path, rbac) : true;
   const crumbs = path.split("/").filter(Boolean);
   const notifHref = isP ? "/app/notifications" : role === "trainer" ? "/admin/notifications" : "/admin";
@@ -97,8 +99,8 @@ export function Shell({ children }: { children: ReactNode }) {
       <aside className={cn("no-print sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-card p-3 md:flex", collapsed ? "w-[68px]" : "w-64")}>
         <div className="mb-4 flex items-center justify-between px-1"><Link href="/" className="font-bold text-primary">{collapsed ? "GN" : t.appName}</Link><button aria-label="Collapse sidebar" onClick={() => setCollapsed(!collapsed)} className="rounded-full p-1 hover:bg-accent-soft"><Ph.SidebarSimple size={18} /></button></div>
         <nav aria-label="Primary" className="flex-1 space-y-0.5 overflow-y-auto">
-          {nav.map((n) => { const active = n.href === path || (n.href !== "/app" && n.href !== "/admin" && path.startsWith(n.href)); return (
-            <Link key={n.href} href={n.href} title={label(n)} aria-current={active ? "page" : undefined} className={cn("flex items-center gap-3 rounded-xl px-3 py-2 text-sm", active ? "bg-accent-soft font-semibold text-primary" : "text-muted hover:bg-accent-soft")}><Icon name={n.icon} size={20} weight={active ? "fill" : "regular"} />{!collapsed && label(n)}</Link>); })}
+          {nav.map((n, i) => { const active = n.href === path || (n.href !== "/app" && n.href !== "/admin" && path.startsWith(n.href)); const split = n.group && i > 0 && nav[i - 1].group !== n.group; return (
+            <div key={n.href}>{split && <div className="mx-3 my-2 border-t border-border" />}<Link href={n.href} title={label(n)} aria-current={active ? "page" : undefined} className={cn("flex items-center gap-3 rounded-xl px-3 py-2 text-sm", active ? "bg-accent-soft font-semibold text-primary" : "text-muted hover:bg-accent-soft")}><Icon name={n.icon} size={20} weight={active ? "fill" : "regular"} />{!collapsed && label(n)}</Link></div>); })}
         </nav>
         {!collapsed && <p className="mt-2 rounded-lg bg-saffron/15 p-2 text-[11px] text-foreground">{t.demoBanner}</p>}
       </aside>
@@ -120,10 +122,10 @@ export function Shell({ children }: { children: ReactNode }) {
 
         {!isP && <nav aria-label="Breadcrumb" className="hidden px-6 pt-4 text-xs text-muted md:block">{crumbs.map((c, i) => <span key={i}>{i > 0 && " / "}{i === crumbs.length - 1 ? <span className="text-foreground">{c}</span> : c}</span>)}</nav>}
 
-        <main id="main" className={cn("mx-auto max-w-6xl px-4 py-5 md:px-6", isP && "pb-28 md:pb-8")}>
+        <main id="main" className={cn("mx-auto px-4 py-5 md:px-6", "max-w-none lg:px-8", isP && "pb-28 md:pb-8")}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div key={path} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
-              {allowed ? children : (
+              {gated ? (<Card className="mx-auto max-w-md py-10 text-center"><h1 className="text-xl font-bold">{tr("Opens after approval", "ಅನುಮೋದನೆಯ ನಂತರ ತೆರೆಯುತ್ತದೆ")}</h1><p className="mt-1 text-sm text-muted">{tr("This part of the app is for approved volunteers. Your application is being reviewed by people; registering does not guarantee selection.", "ಈ ಭಾಗ ಅನುಮೋದಿತ ಸ್ವಯಂಸೇವಕರಿಗೆ. ನಿಮ್ಮ ಅರ್ಜಿಯನ್ನು ಜನರು ಪರಿಶೀಲಿಸುತ್ತಿದ್ದಾರೆ; ನೋಂದಣಿ ಆಯ್ಕೆಯ ಖಾತರಿಯಲ್ಲ.")}</p><Link href="/app/status" className="mt-4 inline-block"><Button>{tr("See my application status", "ನನ್ನ ಅರ್ಜಿ ಸ್ಥಿತಿ ನೋಡಿ")}</Button></Link></Card>) : allowed ? children : (
                 <Card className="mx-auto max-w-md py-10 text-center"><Ph.LockKey size={34} className="mx-auto text-danger" /><h1 className="mt-3 text-xl font-bold">{tr("Permission denied", "ಪ್ರವೇಶ ನಿರಾಕರಿಸಲಾಗಿದೆ")}</h1><p className="mt-1 text-sm text-muted">{t.denied}</p><p className="mt-1 text-xs text-muted">{t.roles[role]}</p><Link href={homeFor(role)} className="mt-4 inline-block"><Button>{tr("Go to my home", "ನನ್ನ ಮುಖಪುಟಕ್ಕೆ")}</Button></Link></Card>
               )}
             </motion.div>

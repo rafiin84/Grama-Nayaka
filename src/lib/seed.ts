@@ -1,7 +1,10 @@
 import type * as T from "./types";
 
 const d = (s: string) => `2026-${s}`;
-export const ME = "P-1042"; // demo participant
+export const DEMO_ME = "P-1042"; // the sample participant shown when nobody is signed in
+/** The participant whose screens are shown. A live binding: it follows the signed-in volunteer. */
+export let ME = DEMO_ME;
+export function setMe(id: string) { ME = id; }
 export const trainers: T.Trainer[] = [
   { id: "T-1", name: "Savitha Rao" }, { id: "T-2", name: "Manjunath Hegde" }, { id: "T-3", name: "Farah Sultana" }, { id: "T-4", name: "Lakshmi Nair" }, { id: "T-5", name: "Ravi Shankar" },
 ];

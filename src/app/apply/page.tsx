@@ -11,6 +11,7 @@ import { useT } from "@/lib/useT";
 import { acs, districts, gps, taluks } from "@/lib/seed-geo";
 import { api, useAct } from "@/lib/api";
 import { useDb } from "@/lib/db";
+import { usePrefs } from "@/lib/store";
 
 const ageOf = (dob: string) => { const b = new Date(dob); if (isNaN(+b)) return NaN; const n = new Date("2026-10-20"); let a = n.getFullYear() - b.getFullYear(); if (n < new Date(n.getFullYear(), b.getMonth(), b.getDate())) a--; return a; };
 const schema = z.object({
@@ -40,7 +41,7 @@ export default function Apply() {
   const err = (n: keyof F) => msg(errors[n]?.message as string | undefined);
   const next = async () => { if (await trigger(stepFields[step])) setStep(step + 1); };
   const saveDraft = async () => { await act(() => api.applications.saveDraft(getValues() as never), tr("Draft saved (demo)", "ಕರಡು ಉಳಿಸಲಾಗಿದೆ (ಡೆಮೊ)")); setSaved(true); };
-  const submit = f.handleSubmit(async (v) => { const id = await act(() => api.applications.submit({ ...v, age: ageOf(v.dob) })); if (id) setRef(id); });
+  const submit = f.handleSubmit(async (v) => { const id = await act(() => api.applications.submit({ ...v, age: ageOf(v.dob), phone: usePrefs.getState().session?.phone })); if (id) { setRef(id); usePrefs.getState().renameSession(v.name.trim()); } });
 
   if (ref) return (
     <div className="mx-auto max-w-lg px-4 py-10"><Card className="space-y-3 text-center"><CheckCircle size={48} weight="fill" className="mx-auto text-success" />

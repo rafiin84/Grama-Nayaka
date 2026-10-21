@@ -8,10 +8,11 @@ import { useT } from "@/lib/useT";
 import { MOCK_OTP, NOTICE_VERSION, purposes } from "@/lib/consent";
 import { api } from "@/lib/api";
 import { usePrefs } from "@/lib/store";
+import { maskPhone } from "@/lib/session";
 
 export default function Register() {
   const { tr, lang } = useT(); const router = useRouter();
-  const setRole = usePrefs((s) => s.setRole);
+  const signIn = usePrefs((s) => s.signIn);
   const [step, setStep] = useState<"phone" | "consent" | "otp">("phone");
   const [phone, setPhone] = useState(""); const [err, setErr] = useState("");
   const [grants, setGrants] = useState<Record<string, boolean>>({}); const [full, setFull] = useState(false);
@@ -26,7 +27,7 @@ export default function Register() {
     if (expired) return setErr(tr("This code has expired. Request a new one.", "ಈ ಕೋಡ್ ಅವಧಿ ಮುಗಿದಿದೆ. ಹೊಸದನ್ನು ಕೇಳಿ."));
     if (otp !== MOCK_OTP) { const n = tries + 1; setTries(n); setOtp(""); return setErr(n >= 3 ? tr("Too many wrong attempts. Please wait and try later (demo rate limit).", "ತುಂಬಾ ತಪ್ಪು ಪ್ರಯತ್ನಗಳು. ನಂತರ ಪ್ರಯತ್ನಿಸಿ (ಡೆಮೊ ಮಿತಿ).") : tr(`Wrong code. ${3 - n} attempts left.`, `ತಪ್ಪು ಕೋಡ್. ${3 - n} ಪ್ರಯತ್ನ ಬಾಕಿ.`)); }
     purposes.forEach((p) => grants[p.id] && api.consent.grant(p.id, "register", lang));
-    setRole("participant"); router.push("/apply");
+    signIn({ userId: `NEW-${phone.slice(-4)}`, name: tr("New applicant", "ಹೊಸ ಅರ್ಜಿದಾರ"), role: "participant", phoneMasked: maskPhone(phone), phone, applicant: true }); router.push("/apply");
   };
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
@@ -37,7 +38,7 @@ export default function Register() {
           <h1 className="text-xl font-bold">{tr("Register your interest", "ಆಸಕ್ತಿ ನೋಂದಾಯಿಸಿ")}</h1>
           <Field label={tr("Mobile number", "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ")} error={err} required>{(id, a) => (<div className="flex gap-2"><span className="grid place-items-center rounded-xl border border-border bg-accent-soft px-3">+91</span><Input id={id} {...a} inputMode="numeric" maxLength={10} value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} placeholder="9XXXXXXXXX" /></div>)}</Field>
           <Button className="w-full" size="lg" onClick={toConsent}>{tr("Continue", "ಮುಂದುವರಿಸಿ")}</Button>
-          <p className="text-xs text-muted">{tr("Registering does not guarantee selection. ", "ನೋಂದಣಿ ಆಯ್ಕೆಯ ಖಾತರಿಯಲ್ಲ. ")}<Link href="/privacy" className="underline">{tr("Read the privacy notice", "ಗೌಪ್ಯತಾ ಸೂಚನೆ ಓದಿ")}</Link></p>
+          <p className="text-center text-sm text-muted">{tr("Already registered?", "ಈಗಾಗಲೇ ನೋಂದಾಯಿಸಿದ್ದೀರಾ?")} <Link href="/signin" className="font-semibold text-primary underline">{tr("Sign in", "ಸೈನ್ ಇನ್")}</Link></p><p className="text-xs text-muted">{tr("Registering does not guarantee selection. ", "ನೋಂದಣಿ ಆಯ್ಕೆಯ ಖಾತರಿಯಲ್ಲ. ")}<Link href="/privacy" className="underline">{tr("Read the privacy notice", "ಗೌಪ್ಯತಾ ಸೂಚನೆ ಓದಿ")}</Link></p>
         </>)}
         {step === "consent" && (<>
           <h1 className="text-xl font-bold">{tr("Privacy notice and your choices", "ಗೌಪ್ಯತಾ ಸೂಚನೆ ಮತ್ತು ನಿಮ್ಮ ಆಯ್ಕೆಗಳು")}</h1>

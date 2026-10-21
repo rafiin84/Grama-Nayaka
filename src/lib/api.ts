@@ -31,9 +31,9 @@ const audit = (action: string, resourceType: string, resourceId: string, before?
 
 /** Reads: typed, async, cached by TanStack Query. */
 export function useMock<R>(key: unknown[], fn: () => R) {
-  const r = usePrefs((s) => s.role); const sel = usePrefs((s) => s.scopeSel);
+  const r = usePrefs((s) => s.role); const sel = usePrefs((s) => s.scopeSel); const who = usePrefs((s) => s.session?.userId);
   const v = useDb((s) => s.audit.length + s.grievances.length + s.ledger.length + s.applications.length + s.notifications.filter((n) => n.read).length + s.requests.length + s.redemptions.length + s.templates.length + s.enrolled.length);
-  return useQuery({ queryKey: [...key, r, JSON.stringify(sel), v, JSON.stringify(Object.keys(useDb.getState().progress).length)], queryFn: () => call(fn, 180), placeholderData: (p) => p });
+  return useQuery({ queryKey: [...key, r, who ?? "", JSON.stringify(sel), v, JSON.stringify(Object.keys(useDb.getState().progress).length)], queryFn: () => call(fn, 180), placeholderData: (p) => p });
 }
 /** Writes: returns act(fn, message) — simulates latency, invalidates reads, shows toast. */
 export function useAct() {
@@ -86,7 +86,7 @@ export const api = {
     submit: (d: Record<string, unknown>) => {
       const id = `APP-26-${2000 + getDb().applications.length}`;
       getDb().patch((s) => {
-        s.applications.unshift({ id, name: String(d.name), phone: "+91 •••••• ••••", dob: String(d.dob), age: Number(d.age), gender: String(d.gender), district: String(d.district), ac: String(d.ac), taluk: String(d.taluk), gp: String(d.gp),
+        s.applications.unshift({ id, name: String(d.name), phone: d.phone ? String(d.phone) : "+91 •••••• ••••", dob: String(d.dob), age: Number(d.age), gender: String(d.gender), district: String(d.district), ac: String(d.ac), taluk: String(d.taluk), gp: String(d.gp),
           education: String(d.education), institution: String(d.institution), field: String(d.field), motivation: String(d.motivation), verification: "Simulated – not verified", consentReceipt: nid("CR"), status: "Submitted", submittedAt: now().slice(0, 10),
           history: [{ status: "Submitted", at: now().slice(0, 10), by: "System" }], internalNotes: [] });
         s.myApplicationId = id; s.appDraft = {};

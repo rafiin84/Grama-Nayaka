@@ -38,6 +38,13 @@ Reachable from the demo role switcher (State = Super Admin). Pages: **Dashboard*
 - CSV only for import (save Excel files as CSV). Training materials record the file name and size; nothing is uploaded. Training duration is fixed at 2 days because attendance is modelled per day (day 1 / day 2).
 - The requirement text was cut off at section 5, so reports beyond training (and anything after) were not specified.
 
+## Sign in, sessions and Logout
+- **Register** (hero button and `/register`) starts the application: mobile number → consent → OTP → application form. **Sign in** (header, right) is `/signin`: mobile number → OTP → verified → you land on your own home (volunteers `/app`, staff `/admin`, trainers `/admin/training`). Nobody is signed in until the code is verified.
+- Signed in, the header shows your profile (initial + name) with **Open my home** and **Log out**; logging out restores **Sign in**. The session (name, role, masked phone) survives a reload and is cleared on logout. The OTP itself is never stored.
+- Demo OTP is **123456** (000000 = expired; 3 wrong tries lock the form). The Sign in page lists fictional demo numbers. A number that verifies but has no account is told to register; inactive, suspended or deleted accounts cannot sign in. A new applicant only sees Home, Application status and Help until approved.
+- Signing in as a volunteer switches the participant screens to that person's data (most seeded volunteers have little activity, which is realistic).
+- **This is a UI simulation.** There is no server and no SMS gateway, and pages are not hard-blocked for signed-out visitors (the role switcher in the profile menu stays as a labelled demo tool). A real deployment needs a real OTP provider, server-issued sessions and server-side authorisation.
+
 ## Admin add / edit / manage screens
 Every list has a working **Add**, **View**, **Edit**, **Delete (with confirmation)**, search/filter and, where it makes sense, **bulk actions**, with field-level validation and success/error messages. Forms are full pages with unsaved-changes protection.
 - **Users & Volunteers:** `/admin/users/new`, `/admin/users/[id]`, `/admin/users/[id]/edit`. Fields: name, mobile, email, date of birth, address, district/block/Gram Panchayat, village, assigned training session, role, account status; training status is derived from the session and attendance. Profile actions: change role, assign villages, activate/deactivate/suspend (reason required), issue a new activation code, delete/restore. Bulk: activate, deactivate/suspend, register for a session, delete; CSV import/export.

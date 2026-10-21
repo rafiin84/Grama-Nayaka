@@ -12,7 +12,7 @@ export const roleUsers: Record<T.Role, RoleUser> = {
   coordinator: { name: "Neha Coordinator", label: "Training", scope: {} },
   grievance: { name: "Girish Grievance", label: "Grievances", scope: {} },
   content: { name: "Charu Content", label: "Content", scope: {} },
-  participant: { name: "Ananya Gowda", label: "P-1042", scope: { gp: "Hosahalli GP" } },
+  participant: { name: "Meghana Shetty", label: "P-1042", scope: { gp: "Hosahalli GP" } },
 };
 // ---- Selectable scope -------------------------------------------------------------------------
 // A role's assigned scope is fixed (roleUsers). Inside it, the user can narrow the view with the scope switcher.
@@ -23,7 +23,10 @@ export const setActiveScope = (sel: ScopeSel | undefined) => { active = sel ?? {
 export const activeScope = (role: T.Role) => active[role] ?? "all";
 /** The trainer a Trainer session is acting as (default T-1). */
 export const activeTrainerId = () => { const v = active.trainer; return v && v.startsWith("t:") ? v.slice(2) : "T-1"; };
-export const actorName = (role: T.Role) => (role === "trainer" ? trainers.find((t) => t.id === activeTrainerId())?.name ?? roleUsers.trainer.name : roleUsers[role].name);
+import type { Session } from "./session";
+let session: Session | null = null;
+export const setActiveSession = (s: Session | null) => { session = s; };
+export const actorName = (role: T.Role) => (session && session.role === role ? session.name : role === "trainer" ? trainers.find((t) => t.id === activeTrainerId())?.name ?? roleUsers.trainer.name : roleUsers[role].name);
 
 export function inScope(role: T.Role, r: { district?: string; gp?: string; taluk?: string }) {
   const sc = roleUsers[role].scope;

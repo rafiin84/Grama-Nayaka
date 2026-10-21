@@ -11,6 +11,8 @@ import { PROGRAM_FIGURES as F } from "@/lib/programFigures";
 import { Photo, TrainingVideoPlayer } from "@/components/Media";
 import { CREDITS } from "@/lib/credits";
 import { usePrefs } from "@/lib/store";
+import { AuthControl } from "@/components/shell/AuthControl";
+import { homeFor } from "@/lib/nav";
 import { useT } from "@/lib/useT";
 import { cn } from "@/lib/utils";
 
@@ -23,12 +25,13 @@ function Count({ to, ready }: { to: number; ready: boolean }) {
 const Section = ({ id, eyebrow, title, sub, children, tone, bg, bare }: { id: string; eyebrow: string; title: string; sub?: string; children: React.ReactNode; tone?: "soft" | "dark" ; bg?: React.ReactNode; bare?: boolean }) => (
   <section id={id} className={cn("relative isolate scroll-mt-28 overflow-hidden py-14 md:py-20", tone === "soft" && "bg-accent-soft", tone === "dark" && "bg-deep text-white")}>
     {bg}
-    <div className="relative mx-auto max-w-6xl px-4">{!bare && <><p className="text-xs font-bold uppercase tracking-[0.18em] text-saffron">{eyebrow}</p><h2 className="mt-2 max-w-3xl text-3xl font-bold md:text-4xl">{title}</h2>{sub && <p className={cn("mt-3 max-w-2xl", tone === "dark" ? "text-white/75" : "text-muted")}>{sub}</p>}</>}<div className={bare ? "" : "mt-8"}>{children}</div></div>
+    <div className="relative mx-auto max-w-none md:px-10 lg:px-14 px-4">{!bare && <><p className="text-xs font-bold uppercase tracking-[0.18em] text-saffron">{eyebrow}</p><h2 className="mt-2 max-w-3xl text-3xl font-bold md:text-4xl">{title}</h2>{sub && <p className={cn("mt-3 max-w-2xl", tone === "dark" ? "text-white/75" : "text-muted")}>{sub}</p>}</>}<div className={bare ? "" : "mt-8"}>{children}</div></div>
   </section>
 );
 
 export default function Landing() {
   const { t, tr, loc } = useT(); const role = usePrefs((s) => s.role); const mounted = useMounted(); const db = useDb(); const s = homeStats(db);
+  const session = usePrefs((st) => st.session); const signed = mounted && !!session;
   const admin = role !== "participant" && role !== "trainer";
   const go = (p: string, a: string) => (admin ? a : role === "trainer" ? a : p);
   const nf = (n: number) => n.toLocaleString("en-IN"); const openG = F.grievancesRaised - F.grievancesClosed; const rate = Math.round((F.grievancesClosed / F.grievancesRaised) * 100); const perVillage = Math.round(F.villagers / F.villages);
@@ -56,27 +59,27 @@ export default function Landing() {
     <div className="min-h-screen">
       <div className="bg-deep px-4 py-1.5 text-center text-xs text-white">{t.demoBanner}</div>
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/" className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-fg"><UsersThree size={20} weight="fill" /></span><span><span className="block font-bold leading-tight">{t.appName}</span><span className="hidden text-[11px] text-muted sm:block">{t.appNameLocal}</span></span></Link>
+        <div className="mx-auto flex max-w-none md:px-10 lg:px-14 items-center justify-between gap-3 px-4 py-3">
+          <Link href="/" className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-fg"><UsersThree size={20} weight="fill" /></span><span className="max-sm:hidden"><span className="block font-bold leading-tight">{t.appName}</span><span className="hidden text-[11px] text-muted sm:block">{t.appNameLocal}</span></span></Link>
           <nav aria-label="Sections" className="hidden items-center gap-6 text-sm font-medium lg:flex">{nav.map(([id, l]) => <a key={id} href={`#${id}`} className="hover:text-primary">{l}</a>)}</nav>
-          <div className="flex items-center gap-2"><LangSwitch /><ThemeToggle /><Link href={go("/register", "/admin")} className="hidden rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-fg sm:inline-block">{admin || role === "trainer" ? tr("Open console", "ಕನ್ಸೋಲ್ ತೆರೆಯಿರಿ") : tr("Register / Sign in", "ನೋಂದಣಿ / ಸೈನ್ ಇನ್")}</Link></div>
+          <div className="flex items-center gap-2"><LangSwitch /><ThemeToggle /><AuthControl /></div>
         </div>
         <nav aria-label="Sections" className="flex gap-4 overflow-x-auto border-t border-border px-4 py-2 text-sm lg:hidden">{nav.map(([id, l]) => <a key={id} href={`#${id}`} className="whitespace-nowrap text-muted">{l}</a>)}</nav>
       </header>
 
       {/* A. Hero: full-screen image with the copy and headline figures on top */}
-      <section className="relative isolate flex min-h-[max(600px,calc(100svh-96px))] flex-col overflow-hidden bg-[#04241c] text-white">
+      <section className="relative isolate flex min-h-[max(600px,calc(100svh-96px))] flex-col overflow-hidden bg-neutral-900 text-white">
         <Image src="/hero.jpg" alt={tr("A young volunteer on a village street at sunset", "ಸೂರ್ಯಾಸ್ತದ ವೇಳೆ ಹಳ್ಳಿಯ ರಸ್ತೆಯಲ್ಲಿ ಯುವ ಸ್ವಯಂಸೇವಕ")} fill priority sizes="100vw" className="-z-20 object-cover object-[68%_22%] md:object-[62%_24%]" />
-        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-[#04241c]/95 via-[#062f26]/78 to-[#062f26]/10 max-md:from-[#04241c]/85 max-md:via-[#04241c]/75 max-md:to-[#04241c]/70" />
-        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-[#04241c]/90 via-transparent to-[#04241c]/30" />
+        <div aria-hidden className="absolute inset-y-0 left-0 -z-10 w-full bg-gradient-to-r from-black/70 via-black/40 to-transparent backdrop-blur-[3px] max-md:bg-black/55 md:w-[70%] md:[-webkit-mask-image:linear-gradient(to_right,#000_55%,transparent)] md:[mask-image:linear-gradient(to_right,#000_55%,transparent)]" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/55 via-transparent to-black/10" />
         <span className="absolute right-4 top-4 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white/80 backdrop-blur md:right-6">{tr("Illustrative image", "ವಿವರಣಾತ್ಮಕ ಚಿತ್ರ")}</span>
 
-        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pb-8 pt-14 md:pt-10">
+        <div className="mx-auto flex w-full max-w-none md:px-10 lg:px-14 flex-1 flex-col justify-center px-4 pb-8 pt-14 md:pt-10">
           <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-sm backdrop-blur"><span className="h-2 w-2 rounded-full bg-saffron" />{tr(`${nf(F.gramaNayakas)} Grama Nayakas · ${nf(F.villages)} villages`, `${nf(F.gramaNayakas)} ಗ್ರಾಮ ನಾಯಕರು · ${nf(F.villages)} ಗ್ರಾಮಗಳು`)}</span>
           <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-[1.1] md:text-6xl lg:text-[64px]">{tr("Grama Nayaka – Empowering Villages, Enabling Change", "ಗ್ರಾಮ ನಾಯಕ – ಗ್ರಾಮಗಳ ಸಬಲೀಕರಣ, ಬದಲಾವಣೆಗೆ ಶಕ್ತಿ")}</h1>
           <p className="mt-5 max-w-xl text-base text-white/85 md:text-lg">{tr("Grama Nayaka is a village empowerment initiative that trains volunteers, promotes awareness of Gram Panchayat governance, connects villages to digital resources, and helps communities raise and track grievances until resolution.", "ಗ್ರಾಮ ನಾಯಕ ಒಂದು ಗ್ರಾಮ ಸಬಲೀಕರಣ ಉಪಕ್ರಮ: ಸ್ವಯಂಸೇವಕರಿಗೆ ತರಬೇತಿ, ಗ್ರಾಮ ಪಂಚಾಯತ್ ಆಡಳಿತದ ಅರಿವು, ಹಳ್ಳಿಗಳಿಗೆ ಡಿಜಿಟಲ್ ಸಂಪನ್ಮೂಲ, ಮತ್ತು ದೂರುಗಳನ್ನು ಪರಿಹಾರವಾಗುವವರೆಗೆ ದಾಖಲಿಸಿ ಗಮನಿಸಲು ಸಮುದಾಯಗಳಿಗೆ ನೆರವು.")}</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Link href={go("/register", "/admin")} className={cn(btn, "bg-saffron text-[#2b1700]")}>{admin || role === "trainer" ? tr("Open console", "ಕನ್ಸೋಲ್ ತೆರೆಯಿರಿ") : tr("Get Started", "ಆರಂಭಿಸಿ")} <ArrowRight weight="bold" /></Link>
+            <Link href={signed ? homeFor(session!.role) : "/register"} className={cn(btn, "bg-saffron text-[#2b1700]")}>{signed ? tr("Open my home", "ನನ್ನ ಮುಖಪುಟ ತೆರೆಯಿರಿ") : tr("Register", "ನೋಂದಾಯಿಸಿ")} <ArrowRight weight="bold" /></Link>
             <Link href={go("/app/learning", "/admin/lms")} className={cn(btn, "border border-white/40 bg-white/10 backdrop-blur")}>{tr("Explore Learning Resources", "ಕಲಿಕಾ ಸಂಪನ್ಮೂಲ ನೋಡಿ")}</Link>
             <Link href={go("/app/grievances/new", "/admin/grievances")} className={cn(btn, "border border-white/40 bg-white/10 backdrop-blur")}>{tr("Raise a Grievance", "ದೂರು ದಾಖಲಿಸಿ")}</Link>
           </div>
@@ -84,10 +87,10 @@ export default function Landing() {
         </div>
 
         {/* Headline figures over the image */}
-        <div className="mx-auto w-full max-w-6xl px-4 pb-6 md:pb-8">
+        <div className="mx-auto w-full max-w-none md:px-10 lg:px-14 px-4 pb-6 md:pb-8">
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/25 bg-white/20 backdrop-blur-md md:grid-cols-5">
             {([[UsersThree, F.gramaNayakas, tr("Grama Nayakas", "ಗ್ರಾಮ ನಾಯಕರು"), ""], [MapPinLine, F.villages, tr("Villages", "ಗ್ರಾಮಗಳು"), ""], [UsersFour, F.villagers, tr("Villagers", "ಗ್ರಾಮಸ್ಥರು"), ""], [ChatsCircle, F.grievancesRaised, tr("Grievances raised", "ದಾಖಲಾದ ದೂರುಗಳು"), ""], [CheckCircle, F.grievancesClosed, tr("Grievances closed", "ಮುಚ್ಚಿದ ದೂರುಗಳು"), tr(`${Math.round((F.grievancesClosed / F.grievancesRaised) * 100)}% of raised`, `ದಾಖಲಾದವುಗಳ ${Math.round((F.grievancesClosed / F.grievancesRaised) * 100)}%`)]] as const).map(([Icon, n, l, h], i) => (
-              <div key={i} className={cn("flex items-center gap-3 bg-[#062f26]/70 p-4 md:flex-col md:items-start md:gap-2", i === 4 && "col-span-2 md:col-span-1")}>
+              <div key={i} className={cn("flex items-center gap-3 bg-black/45 p-4 md:flex-col md:items-start md:gap-2", i === 4 && "col-span-2 md:col-span-1")}>
                 <Icon size={22} weight="duotone" className="shrink-0 text-saffron" />
                 <div className="min-w-0"><p className="text-2xl font-bold leading-none md:text-[28px]"><Count to={n} ready={mounted} /></p><p className="mt-1 text-sm text-white/80">{l}</p>{h && <p className="text-xs text-white/55">{h}</p>}</div>
               </div>))}
@@ -180,12 +183,12 @@ export default function Landing() {
       </Section>
 
       {/* FAQ + CTA */}
-      <section id="faq" className="scroll-mt-28 bg-accent-soft py-14 md:py-20"><div className="mx-auto grid max-w-6xl gap-8 px-4 md:grid-cols-[1fr_1.2fr]">
-        <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-saffron">FAQ</p><h2 className="mt-2 text-3xl font-bold">{t.faq}</h2><div className="mt-6 rounded-3xl bg-gradient-to-br from-forest to-deep p-6 text-white"><h3 className="text-xl font-bold">{tr(`Join ${nf(F.gramaNayakas)} Grama Nayakas in ${nf(F.villages)} villages`, `${nf(F.villages)} ಗ್ರಾಮಗಳ ${nf(F.gramaNayakas)} ಗ್ರಾಮ ನಾಯಕರೊಂದಿಗೆ ಸೇರಿ`)}</h3><p className="mt-1 text-sm text-white/80">{t.tagline}</p><Link href={go("/register", "/admin")} className={cn(btn, "mt-4 bg-saffron text-[#2b1700]")}>{admin || role === "trainer" ? tr("Open console", "ಕನ್ಸೋಲ್ ತೆರೆಯಿರಿ") : t.ctaRegister} <ArrowRight weight="bold" /></Link></div></div>
+      <section id="faq" className="scroll-mt-28 bg-accent-soft py-14 md:py-20"><div className="mx-auto grid max-w-none md:px-10 lg:px-14 gap-8 px-4 md:grid-cols-[1fr_1.2fr]">
+        <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-saffron">FAQ</p><h2 className="mt-2 text-3xl font-bold">{t.faq}</h2><div className="mt-6 rounded-3xl bg-gradient-to-br from-forest to-deep p-6 text-white"><h3 className="text-xl font-bold">{tr(`Join ${nf(F.gramaNayakas)} Grama Nayakas in ${nf(F.villages)} villages`, `${nf(F.villages)} ಗ್ರಾಮಗಳ ${nf(F.gramaNayakas)} ಗ್ರಾಮ ನಾಯಕರೊಂದಿಗೆ ಸೇರಿ`)}</h3><p className="mt-1 text-sm text-white/80">{t.tagline}</p><Link href={signed ? homeFor(session!.role) : "/register"} className={cn(btn, "mt-4 bg-saffron text-[#2b1700]")}>{signed ? tr("Open my home", "ನನ್ನ ಮುಖಪುಟ ತೆರೆಯಿರಿ") : tr("Register", "ನೋಂದಾಯಿಸಿ")} <ArrowRight weight="bold" /></Link></div></div>
         <div className="space-y-3">{faq.map(([q, a]) => <details key={q} className="rounded-2xl border border-border bg-card p-4"><summary className="cursor-pointer font-medium">{q}</summary><p className="mt-2 text-muted">{a}</p></details>)}</div>
       </div></section>
 
-      <footer className="bg-deep py-8 text-sm text-white/75"><div className="mx-auto flex max-w-6xl px-4 flex-wrap items-center justify-between gap-3"><p>{t.appName} · {t.tagline}</p><p className="flex gap-5"><Link href="/privacy" className="underline">{t.privacy}</Link><Link href="/app/help" className="underline">{t.help}</Link><Link href="/apply" className="underline">{t.j1}</Link></p></div><p className="mx-auto mt-3 max-w-6xl px-4 text-xs text-white/55">{t.nonPartisan}</p><details className="mx-auto mt-3 max-w-6xl px-4 text-xs text-white/60"><summary className="cursor-pointer underline-offset-2 hover:underline">{tr("Photo and video credits", "ಚಿತ್ರ ಮತ್ತು ವೀಡಿಯೋ ಕ್ರೆಡಿಟ್‌ಗಳು")}</summary><ul className="mt-2 space-y-1">{Object.values(CREDITS).map((c) => <li key={c.id}><a className="underline" href={c.source} target="_blank" rel="noreferrer">{c.title}</a> · {c.author} · <a className="underline" href={c.licenseUrl} target="_blank" rel="noreferrer">{c.license}</a> · via Wikimedia Commons. {c.note}</li>)}</ul></details></footer>
+      <footer className="bg-deep py-8 text-sm text-white/75"><div className="mx-auto flex max-w-none md:px-10 lg:px-14 px-4 flex-wrap items-center justify-between gap-3"><p>{t.appName} · {t.tagline}</p><p className="flex gap-5"><Link href="/privacy" className="underline">{t.privacy}</Link><Link href="/app/help" className="underline">{t.help}</Link><Link href="/apply" className="underline">{t.j1}</Link></p></div><p className="mx-auto mt-3 max-w-none md:px-10 lg:px-14 px-4 text-xs text-white/55">{t.nonPartisan}</p><details className="mx-auto mt-3 max-w-none md:px-10 lg:px-14 px-4 text-xs text-white/60"><summary className="cursor-pointer underline-offset-2 hover:underline">{tr("Photo and video credits", "ಚಿತ್ರ ಮತ್ತು ವೀಡಿಯೋ ಕ್ರೆಡಿಟ್‌ಗಳು")}</summary><ul className="mt-2 space-y-1">{Object.values(CREDITS).map((c) => <li key={c.id}><a className="underline" href={c.source} target="_blank" rel="noreferrer">{c.title}</a> · {c.author} · <a className="underline" href={c.licenseUrl} target="_blank" rel="noreferrer">{c.license}</a> · via Wikimedia Commons. {c.note}</li>)}</ul></details></footer>
     </div>
   );
 }

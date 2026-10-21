@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRight, CheckCircle, ClipboardText, Clock, DownloadSimple, FunnelSimple, MapPinLine, UsersThree, Warning } from "@phosphor-icons/react";
-import { Badge, Button, Card, Empty, Field, Input, PageHeader, QState, Select } from "@/components/ui";
+import { Badge, Button, Card, Empty, Field, Input, Modal, PageHeader, QState, Select } from "@/components/ui";
 import { ChartCard } from "@/components/charts";
 import { useMock } from "@/lib/api";
 import { getDb } from "@/lib/db";
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 const daysAgo = (n: number) => new Date(new Date(today).getTime() - n * 86400000).toISOString().slice(0, 10);
 
 export default function Overview() {
-  const { tr } = useT(); const role = usePrefs((s) => s.role); const router = useRouter(); const [f, setF] = useState<DashFilters>(emptyFilters);
+  const { tr } = useT(); const role = usePrefs((s) => s.role); const router = useRouter(); const [f, setF] = useState<DashFilters>(emptyFilters); const [fo, setFo] = useState(false);
   const q = useMock(["dash", JSON.stringify(f)], () => { const d = getDb(); return { s: adminStats(d, role, f), villages: d.villages, statuses: ["Open", "In Progress", "Follow-up Due", "Escalated", "Closure Pending", "Closed", "Reopened"] }; });
   if (role === "trainer") { if (typeof window !== "undefined") router.replace("/admin/training"); return null; }
   const set = (p: Partial<DashFilters>) => setF({ ...f, ...p });
@@ -27,10 +27,10 @@ export default function Overview() {
   return (
     <div className="space-y-5">
       <PageHeader title={tr("Admin dashboard", "ಅಡ್ಮಿನ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್")} sub={tr("Every figure is counted from the app's records, inside your role's scope and the filters below. This prototype holds demo data.", "ಪ್ರತಿ ಅಂಕಿಯನ್ನೂ ಆ್ಯಪ್ ದಾಖಲೆಗಳಿಂದ, ನಿಮ್ಮ ಪಾತ್ರದ ವ್ಯಾಪ್ತಿ ಮತ್ತು ಕೆಳಗಿನ ಫಿಲ್ಟರ್‌ಗಳೊಳಗೆ ಎಣಿಸಲಾಗಿದೆ. ಈ ಮಾದರಿ ಡೆಮೊ ಡೇಟಾ ಹೊಂದಿದೆ.")}
-        actions={<Button variant="secondary" disabled={!q.data} onClick={() => { const s = q.data!.s; downloadText("dashboard-report.csv", toCsv(["metric", "value"], [["Volunteers registered", s.registered], ["Volunteers trained", s.trained], ["Volunteers pending training", s.pendingTraining], ["Training sessions", s.sessionsTotal], ["Sessions conducted", s.sessionsConducted], ["Villages enrolled", s.villagesEnrolled], ["Villages pending enrollment", s.villagesPending], ["Districts", s.districts], ["Blocks / taluks", s.blocks], ["Gram Panchayats", s.gps], ["Grievances submitted", s.grievances.submitted], ["Grievances pending action", s.grievances.pendingAction], ["Grievances awaiting official response", s.grievances.awaitingResponse], ["Grievances closed", s.grievances.closed], ["Learning resources", s.resources], ["Active users", s.activeUsers], ["Inactive users", s.inactiveUsers]])); }}><DownloadSimple />{tr("Download report", "ವರದಿ ಡೌನ್‌ಲೋಡ್")}</Button>} />
+        actions={<div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={() => setFo(true)}><FunnelSimple />{tr("Filters", "ಫಿಲ್ಟರ್")}{active && <span className="ml-1 h-2 w-2 rounded-full bg-saffron" aria-label={tr("Filters applied", "ಫಿಲ್ಟರ್ ಅನ್ವಯಿಸಲಾಗಿದೆ")} />}</Button><Button variant="secondary" disabled={!q.data} onClick={() => { const s = q.data!.s; downloadText("dashboard-report.csv", toCsv(["metric", "value"], [["Volunteers registered", s.registered], ["Volunteers trained", s.trained], ["Volunteers pending training", s.pendingTraining], ["Training sessions", s.sessionsTotal], ["Sessions conducted", s.sessionsConducted], ["Villages enrolled", s.villagesEnrolled], ["Villages pending enrollment", s.villagesPending], ["Districts", s.districts], ["Blocks / taluks", s.blocks], ["Gram Panchayats", s.gps], ["Grievances submitted", s.grievances.submitted], ["Grievances pending action", s.grievances.pendingAction], ["Grievances awaiting official response", s.grievances.awaitingResponse], ["Grievances closed", s.grievances.closed], ["Learning resources", s.resources], ["Active users", s.activeUsers], ["Inactive users", s.inactiveUsers]])); }}><DownloadSimple />{tr("Download report", "ವರದಿ ಡೌನ್‌ಲೋಡ್")}</Button></div>} />
 
       {/* Filters */}
-      <Card className="space-y-3 p-4">
+      <Modal open={fo} onClose={() => setFo(false)} title={tr("Filters", "ಫಿಲ್ಟರ್")} footer={<><Button variant="secondary" onClick={() => setF(emptyFilters)}>{tr("Clear all", "ಎಲ್ಲಾ ತೆರವು")}</Button><Button onClick={() => setFo(false)}>{tr("Done", "ಮುಗಿದಿದೆ")}</Button></>}><div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2"><span className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted"><FunnelSimple size={18} />{tr("Filters", "ಫಿಲ್ಟರ್")}</span>
           <div className="flex flex-wrap items-center gap-2 text-sm">{[[tr("Last 30 days", "ಕಳೆದ 30 ದಿನ"), daysAgo(30)], [tr("Last 90 days", "ಕಳೆದ 90 ದಿನ"), daysAgo(90)]].map(([l, from]) => <button key={l} onClick={() => set({ from, to: today })} className={cn("rounded-full border px-3 py-1", f.from === from ? "border-transparent bg-primary text-primary-fg" : "border-border bg-card")}>{l}</button>)}<button onClick={() => set({ from: "", to: "" })} className={cn("rounded-full border px-3 py-1", !f.from && !f.to ? "border-transparent bg-primary text-primary-fg" : "border-border bg-card")}>{tr("All time", "ಎಲ್ಲಾ ಕಾಲ")}</button>{active && <Button size="sm" variant="ghost" onClick={() => setF(emptyFilters)}>{tr("Reset", "ಮರುಹೊಂದಿಸಿ")}</Button>}</div></div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -43,7 +43,7 @@ export default function Overview() {
           <Field label={tr("Training status", "ತರಬೇತಿ ಸ್ಥಿತಿ")}>{(i) => <Select id={i} value={f.training} onChange={(e) => set({ training: e.target.value as DashFilters["training"] })}><option value="">{tr("Any", "ಯಾವುದೇ")}</option><option value="trained">{tr("Trained", "ತರಬೇತಿ ಪೂರ್ಣ")}</option><option value="pending">{tr("Pending training", "ತರಬೇತಿ ಬಾಕಿ")}</option></Select>}</Field>
           <Field label={tr("Grievance status", "ದೂರು ಸ್ಥಿತಿ")}>{(i) => <Select id={i} value={f.gStatus} onChange={(e) => set({ gStatus: e.target.value })}><option value="">{tr("Any", "ಯಾವುದೇ")}</option>{(q.data?.statuses ?? []).map((x) => <option key={x}>{x}</option>)}</Select>}</Field>
         </div>
-      </Card>
+      </div></Modal>
 
       <QState q={q}>{({ s }) => (<>
         {/* Attention */}
@@ -59,14 +59,13 @@ export default function Overview() {
           </div>
         </section>
 
-        {/* KPI groups */}
-        {([
+        {/* Stats: every KPI card in one scrolling row */}
+        <section aria-labelledby="stats"><h2 id="stats" className="mb-2 text-lg font-bold">{tr("Stats", "ಅಂಕಿಅಂಶ")}</h2><div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-3">{([
           [tr("Volunteers & training", "ಸ್ವಯಂಸೇವಕರು ಮತ್ತು ತರಬೇತಿ"), [[tr("Volunteers registered", "ನೋಂದಾಯಿತ ಸ್ವಯಂಸೇವಕರು"), s.registered, tr("Volunteer accounts in scope (not deleted)", "ವ್ಯಾಪ್ತಿಯ ಸ್ವಯಂಸೇವಕ ಖಾತೆಗಳು (ಅಳಿಸದ)")], [tr("Volunteers trained", "ತರಬೇತಿ ಪಡೆದವರು"), s.trained, tr("Attended both training days", "ಎರಡೂ ದಿನ ಹಾಜರಾದವರು")], [tr("Pending training", "ತರಬೇತಿ ಬಾಕಿ"), s.pendingTraining, tr("Registered minus trained", "ನೋಂದಾಯಿತ ಮೈನಸ್ ತರಬೇತಿ ಪಡೆದವರು")], [tr("Training sessions", "ತರಬೇತಿ ಅವಧಿಗಳು"), s.sessionsTotal, tr(`${s.sessionsConducted} conducted (all rostered attendance recorded)`, `${s.sessionsConducted} ನಡೆದಿವೆ (ಎಲ್ಲರ ಹಾಜರಾತಿ ದಾಖಲು)`)]]],
           [tr("Villages & geography", "ಗ್ರಾಮಗಳು ಮತ್ತು ಭೌಗೋಳಿಕತೆ"), [[tr("Villages enrolled", "ನೋಂದಾಯಿತ ಗ್ರಾಮಗಳು"), s.villagesEnrolled, tr(`of ${s.villagesTotal} on record`, `ದಾಖಲಾದ ${s.villagesTotal} ರಲ್ಲಿ`)], [tr("Pending enrollment", "ನೋಂದಣಿ ಬಾಕಿ"), s.villagesPending, tr("Villages with status Pending", "ಸ್ಥಿತಿ 'ಬಾಕಿ' ಇರುವ ಗ್ರಾಮಗಳು")], [tr("Districts / blocks", "ಜಿಲ್ಲೆಗಳು / ಬ್ಲಾಕ್‌ಗಳು"), `${s.districts} / ${s.blocks}`, tr("From master data, in scope", "ಮಾಸ್ಟರ್ ಡೇಟಾ, ವ್ಯಾಪ್ತಿಯೊಳಗೆ")], [tr("Gram Panchayats", "ಗ್ರಾಮ ಪಂಚಾಯತ್‌ಗಳು"), s.gps, tr("From master data, in scope", "ಮಾಸ್ಟರ್ ಡೇಟಾ, ವ್ಯಾಪ್ತಿಯೊಳಗೆ")]]],
           [tr("Grievances", "ದೂರುಗಳು"), [[tr("Submitted", "ಸಲ್ಲಿಸಿದ"), s.grievances.submitted, tr("All cases in scope and filters", "ವ್ಯಾಪ್ತಿ ಮತ್ತು ಫಿಲ್ಟರ್‌ನ ಎಲ್ಲಾ ಪ್ರಕರಣ")], [tr("Pending action", "ಕ್ರಮ ಬಾಕಿ"), s.grievances.pendingAction, tr("Open, In Progress or Reopened", "ತೆರೆದ, ಪ್ರಗತಿಯಲ್ಲಿರುವ ಅಥವಾ ಮರುತೆರೆದ")], [tr("Awaiting official response", "ಅಧಿಕೃತ ಉತ್ತರಕ್ಕೆ ಕಾಯುತ್ತಿದೆ"), s.grievances.awaitingResponse, tr("Follow-up due or Escalated", "ಅನುಸರಣೆ ಬಾಕಿ ಅಥವಾ ಹೆಚ್ಚಿನ ಹಂತ")], [tr("Resolved & closed", "ಪರಿಹರಿಸಿ ಮುಚ್ಚಿದ"), s.grievances.closed, tr(`+ ${s.grievances.closurePending} awaiting confirmation`, `+ ${s.grievances.closurePending} ದೃಢೀಕರಣಕ್ಕೆ ಬಾಕಿ`)]]],
           [tr("Learning & users", "ಕಲಿಕೆ ಮತ್ತು ಬಳಕೆದಾರರು"), [[tr("Learning resources", "ಕಲಿಕಾ ಸಂಪನ್ಮೂಲ"), s.resources, tr(`Published lessons in ${s.courses} courses`, `${s.courses} ಕೋರ್ಸ್‌ಗಳಲ್ಲಿ ಪ್ರಕಟಿತ ಪಾಠಗಳು`)], [tr("Active users", "ಸಕ್ರಿಯ ಬಳಕೆದಾರರು"), s.activeUsers, tr("Accounts with status Active", "ಸ್ಥಿತಿ ಸಕ್ರಿಯ ಇರುವ ಖಾತೆಗಳು")], [tr("Inactive users", "ನಿಷ್ಕ್ರಿಯ ಬಳಕೆದಾರರು"), s.inactiveUsers, tr("Inactive or suspended", "ನಿಷ್ಕ್ರಿಯ ಅಥವಾ ತಡೆ")], [tr("Applications", "ಅರ್ಜಿಗಳು"), s.applications, tr(`${s.approved} approved`, `${s.approved} ಅನುಮೋದಿತ`)]]],
-        ] as [string, [string, string | number, string][]][]).map(([title, items]) => (
-          <section key={title}><h2 className="mb-2 text-lg font-bold">{title}</h2><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{items.map(([l, v, h]) => <Card key={l} className="p-4 md:p-4" title={h}><p className="text-sm text-muted">{l}</p><p className="mt-1 text-3xl font-bold">{v}</p><p className="mt-1 text-xs text-muted">{h}</p></Card>)}</div></section>))}
+        ] as [string, [string, string | number, string][]][]).flatMap(([, items]) => items).map(([l, v, h]) => <Card key={l} className="w-60 shrink-0 p-4 md:p-4" title={h}><p className="text-sm text-muted">{l}</p><p className="mt-1 text-3xl font-bold">{v}</p><p className="mt-1 text-xs text-muted">{h}</p></Card>)}</div></section>
 
         {/* Charts */}
         <div className="grid gap-4 lg:grid-cols-2">
