@@ -25,7 +25,7 @@ function Count({ to, ready }: { to: number; ready: boolean }) {
 const Section = ({ id, eyebrow, title, sub, children, tone, bg, bare }: { id: string; eyebrow: string; title: string; sub?: string; children: React.ReactNode; tone?: "soft" | "dark" ; bg?: React.ReactNode; bare?: boolean }) => (
   <section id={id} className={cn("relative isolate scroll-mt-28 overflow-hidden py-14 md:py-20", tone === "soft" && "bg-accent-soft", tone === "dark" && "bg-deep text-white")}>
     {bg}
-    <div className="relative mx-auto max-w-none md:px-10 lg:px-14 px-4">{!bare && <><p className="text-xs font-bold uppercase tracking-[0.18em] text-saffron">{eyebrow}</p><h2 className="mt-2 max-w-3xl text-3xl font-bold md:text-4xl">{title}</h2>{sub && <p className={cn("mt-3 max-w-2xl", tone === "dark" ? "text-white/75" : "text-muted")}>{sub}</p>}</>}<div className={bare ? "" : "mt-8"}>{children}</div></div>
+    <div className="relative mx-auto max-w-6xl px-4">{!bare && <><p className="text-xs font-bold uppercase tracking-[0.18em] text-saffron">{eyebrow}</p><h2 className="mt-2 max-w-3xl text-3xl font-bold md:text-4xl">{title}</h2>{sub && <p className={cn("mt-3 max-w-2xl", tone === "dark" ? "text-white/75" : "text-muted")}>{sub}</p>}</>}<div className={bare ? "" : "mt-8"}>{children}</div></div>
   </section>
 );
 
@@ -59,7 +59,7 @@ export default function Landing() {
     <div className="min-h-screen">
       <div className="bg-deep px-4 py-1.5 text-center text-xs text-white">{t.demoBanner}</div>
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-none md:px-10 lg:px-14 items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/" className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-fg"><UsersThree size={20} weight="fill" /></span><span className="max-sm:hidden"><span className="block font-bold leading-tight">{t.appName}</span><span className="hidden text-[11px] text-muted sm:block">{t.appNameLocal}</span></span></Link>
           <nav aria-label="Sections" className="hidden items-center gap-6 text-sm font-medium lg:flex">{nav.map(([id, l]) => <a key={id} href={`#${id}`} className="hover:text-primary">{l}</a>)}</nav>
           <div className="flex items-center gap-2"><LangSwitch /><ThemeToggle /><AuthControl /></div>
@@ -74,7 +74,7 @@ export default function Landing() {
         <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/55 via-transparent to-black/10" />
         <span className="absolute right-4 top-4 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white/80 backdrop-blur md:right-6">{tr("Illustrative image", "ವಿವರಣಾತ್ಮಕ ಚಿತ್ರ")}</span>
 
-        <div className="mx-auto flex w-full max-w-none md:px-10 lg:px-14 flex-1 flex-col justify-center px-4 pb-8 pt-14 md:pt-10">
+        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pb-8 pt-14 md:pt-10">
           <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-sm backdrop-blur"><span className="h-2 w-2 rounded-full bg-saffron" />{tr(`${nf(F.gramaNayakas)} Grama Nayakas · ${nf(F.villages)} villages`, `${nf(F.gramaNayakas)} ಗ್ರಾಮ ನಾಯಕರು · ${nf(F.villages)} ಗ್ರಾಮಗಳು`)}</span>
           <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-[1.1] md:text-6xl lg:text-[64px]">{tr("Grama Nayaka – Empowering Villages, Enabling Change", "ಗ್ರಾಮ ನಾಯಕ – ಗ್ರಾಮಗಳ ಸಬಲೀಕರಣ, ಬದಲಾವಣೆಗೆ ಶಕ್ತಿ")}</h1>
           <p className="mt-5 max-w-xl text-base text-white/85 md:text-lg">{tr("Grama Nayaka is a village empowerment initiative that trains volunteers, promotes awareness of Gram Panchayat governance, connects villages to digital resources, and helps communities raise and track grievances until resolution.", "ಗ್ರಾಮ ನಾಯಕ ಒಂದು ಗ್ರಾಮ ಸಬಲೀಕರಣ ಉಪಕ್ರಮ: ಸ್ವಯಂಸೇವಕರಿಗೆ ತರಬೇತಿ, ಗ್ರಾಮ ಪಂಚಾಯತ್ ಆಡಳಿತದ ಅರಿವು, ಹಳ್ಳಿಗಳಿಗೆ ಡಿಜಿಟಲ್ ಸಂಪನ್ಮೂಲ, ಮತ್ತು ದೂರುಗಳನ್ನು ಪರಿಹಾರವಾಗುವವರೆಗೆ ದಾಖಲಿಸಿ ಗಮನಿಸಲು ಸಮುದಾಯಗಳಿಗೆ ನೆರವು.")}</p>
@@ -87,7 +87,7 @@ export default function Landing() {
         </div>
 
         {/* Headline figures over the image */}
-        <div className="mx-auto w-full max-w-none md:px-10 lg:px-14 px-4 pb-6 md:pb-8">
+        <div className="mx-auto w-full max-w-6xl px-4 pb-6 md:pb-8">
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/25 bg-white/20 backdrop-blur-md md:grid-cols-5">
             {([[UsersThree, F.gramaNayakas, tr("Grama Nayakas", "ಗ್ರಾಮ ನಾಯಕರು"), ""], [MapPinLine, F.villages, tr("Villages", "ಗ್ರಾಮಗಳು"), ""], [UsersFour, F.villagers, tr("Villagers", "ಗ್ರಾಮಸ್ಥರು"), ""], [ChatsCircle, F.grievancesRaised, tr("Grievances raised", "ದಾಖಲಾದ ದೂರುಗಳು"), ""], [CheckCircle, F.grievancesClosed, tr("Grievances closed", "ಮುಚ್ಚಿದ ದೂರುಗಳು"), tr(`${Math.round((F.grievancesClosed / F.grievancesRaised) * 100)}% of raised`, `ದಾಖಲಾದವುಗಳ ${Math.round((F.grievancesClosed / F.grievancesRaised) * 100)}%`)]] as const).map(([Icon, n, l, h], i) => (
               <div key={i} className={cn("flex items-center gap-3 bg-black/45 p-4 md:flex-col md:items-start md:gap-2", i === 4 && "col-span-2 md:col-span-1")}>
@@ -183,12 +183,12 @@ export default function Landing() {
       </Section>
 
       {/* FAQ + CTA */}
-      <section id="faq" className="scroll-mt-28 bg-accent-soft py-14 md:py-20"><div className="mx-auto grid max-w-none md:px-10 lg:px-14 gap-8 px-4 md:grid-cols-[1fr_1.2fr]">
+      <section id="faq" className="scroll-mt-28 bg-accent-soft py-14 md:py-20"><div className="mx-auto grid max-w-6xl gap-8 px-4 md:grid-cols-[1fr_1.2fr]">
         <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-saffron">FAQ</p><h2 className="mt-2 text-3xl font-bold">{t.faq}</h2><div className="mt-6 rounded-3xl bg-gradient-to-br from-forest to-deep p-6 text-white"><h3 className="text-xl font-bold">{tr(`Join ${nf(F.gramaNayakas)} Grama Nayakas in ${nf(F.villages)} villages`, `${nf(F.villages)} ಗ್ರಾಮಗಳ ${nf(F.gramaNayakas)} ಗ್ರಾಮ ನಾಯಕರೊಂದಿಗೆ ಸೇರಿ`)}</h3><p className="mt-1 text-sm text-white/80">{t.tagline}</p><Link href={signed ? homeFor(session!.role) : "/register"} className={cn(btn, "mt-4 bg-saffron text-[#2b1700]")}>{signed ? tr("Open my home", "ನನ್ನ ಮುಖಪುಟ ತೆರೆಯಿರಿ") : tr("Register", "ನೋಂದಾಯಿಸಿ")} <ArrowRight weight="bold" /></Link></div></div>
         <div className="space-y-3">{faq.map(([q, a]) => <details key={q} className="rounded-2xl border border-border bg-card p-4"><summary className="cursor-pointer font-medium">{q}</summary><p className="mt-2 text-muted">{a}</p></details>)}</div>
       </div></section>
 
-      <footer className="bg-deep py-8 text-sm text-white/75"><div className="mx-auto flex max-w-none md:px-10 lg:px-14 px-4 flex-wrap items-center justify-between gap-3"><p>{t.appName} · {t.tagline}</p><p className="flex gap-5"><Link href="/privacy" className="underline">{t.privacy}</Link><Link href="/app/help" className="underline">{t.help}</Link><Link href="/apply" className="underline">{t.j1}</Link></p></div><p className="mx-auto mt-3 max-w-none md:px-10 lg:px-14 px-4 text-xs text-white/55">{t.nonPartisan}</p><details className="mx-auto mt-3 max-w-none md:px-10 lg:px-14 px-4 text-xs text-white/60"><summary className="cursor-pointer underline-offset-2 hover:underline">{tr("Photo and video credits", "ಚಿತ್ರ ಮತ್ತು ವೀಡಿಯೋ ಕ್ರೆಡಿಟ್‌ಗಳು")}</summary><ul className="mt-2 space-y-1">{Object.values(CREDITS).map((c) => <li key={c.id}><a className="underline" href={c.source} target="_blank" rel="noreferrer">{c.title}</a> · {c.author} · <a className="underline" href={c.licenseUrl} target="_blank" rel="noreferrer">{c.license}</a> · via Wikimedia Commons. {c.note}</li>)}</ul></details></footer>
+      <footer className="bg-deep py-8 text-sm text-white/75"><div className="mx-auto flex max-w-6xl px-4 flex-wrap items-center justify-between gap-3"><p>{t.appName} · {t.tagline}</p><p className="flex gap-5"><Link href="/privacy" className="underline">{t.privacy}</Link><Link href="/app/help" className="underline">{t.help}</Link><Link href="/apply" className="underline">{t.j1}</Link></p></div><p className="mx-auto mt-3 max-w-6xl px-4 text-xs text-white/55">{t.nonPartisan}</p><details className="mx-auto mt-3 max-w-6xl px-4 text-xs text-white/60"><summary className="cursor-pointer underline-offset-2 hover:underline">{tr("Photo and video credits", "ಚಿತ್ರ ಮತ್ತು ವೀಡಿಯೋ ಕ್ರೆಡಿಟ್‌ಗಳು")}</summary><ul className="mt-2 space-y-1">{Object.values(CREDITS).map((c) => <li key={c.id}><a className="underline" href={c.source} target="_blank" rel="noreferrer">{c.title}</a> · {c.author} · <a className="underline" href={c.licenseUrl} target="_blank" rel="noreferrer">{c.license}</a> · via Wikimedia Commons. {c.note}</li>)}</ul></details></footer>
     </div>
   );
 }
