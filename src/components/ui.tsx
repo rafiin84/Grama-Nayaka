@@ -119,7 +119,7 @@ export function Tabs<K extends string>({ tabs, value, onChange }: { tabs: { id: 
 }
 /** Scrollable table on small screens. */
 export function Table({ head, children }: { head: string[]; children: ReactNode }) {
-  return (<div className="overflow-x-auto rounded-2xl border border-border bg-card"><table className="w-full min-w-[640px] text-left text-sm"><thead className="border-b border-border bg-accent-soft/60 text-xs uppercase text-muted"><tr>{head.map((h) => <th key={h} className="px-4 py-2.5 font-semibold">{h}</th>)}</tr></thead><tbody className="divide-y divide-border">{children}</tbody></table></div>);
+  return (<div className="overflow-x-auto rounded-2xl border border-border bg-card"><table className="w-full min-w-[640px] text-left text-sm"><thead className="border-b border-border bg-accent-soft/60 text-xs uppercase text-muted"><tr>{head.map((h, i) => <th key={`${i}-${h}`} className="px-4 py-2.5 font-semibold">{h}</th>)}</tr></thead><tbody className="divide-y divide-border">{children}</tbody></table></div>);
 }
 export const Td = ({ children, className }: { children?: ReactNode; className?: string }) => <td className={cn("px-4 py-3 align-top", className)}>{children}</td>;
 export const DemoNote = ({ children }: { children: ReactNode }) => (<p className="rounded-xl border border-saffron/40 bg-saffron/10 px-3 py-2 text-xs text-foreground">{children}</p>);
