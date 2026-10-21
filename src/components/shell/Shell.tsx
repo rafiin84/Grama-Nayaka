@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import * as Ph from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePrefs } from "@/lib/store";
+import { isGated } from "@/lib/session";
 import { useT } from "@/lib/useT";
 import { canOpen, homeFor, navFor } from "@/lib/nav";
 import { roleUsers, useDb } from "@/lib/db";
@@ -49,6 +50,7 @@ function ProfileMenu() {
             ))}
           </div>
           <div className="mt-2 border-t border-border pt-2">{session ? <><p className="px-2 pb-1 text-xs text-muted">{tr("Signed in", "ಸೈನ್ ಇನ್")}: {session.name} · {session.phoneMasked}</p><button role="menuitem" onClick={() => { signOut(); setOpen(false); router.push("/"); }} className="block w-full rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-danger hover:bg-accent-soft">{tr("Log out", "ಲಾಗ್ ಔಟ್")}</button></> : <Link href="/signin" className="block rounded-lg px-2 py-1.5 text-sm font-semibold text-primary hover:bg-accent-soft">{tr("Sign in", "ಸೈನ್ ಇನ್")}</Link>}
+          {session?.demo && <Link href="/choose" onClick={() => setOpen(false)} className="block rounded-lg px-2 py-1.5 text-sm hover:bg-accent-soft">{tr("Switch interface (demo)", "ಇಂಟರ್ಫೇಸ್ ಬದಲಿಸಿ (ಡೆಮೊ)")}</Link>}
           <Link href="/" className="block rounded-lg px-2 py-1.5 text-sm text-muted hover:bg-accent-soft">{tr("Public home", "ಸಾರ್ವಜನಿಕ ಮುಖಪುಟ")}</Link></div>
         </div>
       )}
@@ -84,7 +86,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => setMounted(true), []);
   useEffect(() => { setDrawer(false); setMore(false); }, [path]);
-  const rbac = useDb((s) => s.rbac); const isP = role === "participant"; const sess = usePrefs((st) => st.session); const appl = !!sess?.applicant && isP; const nav = navFor(role, rbac).filter((n) => !appl || ["/app", "/app/status", "/app/help"].includes(n.href));
+  const rbac = useDb((s) => s.rbac); const isP = role === "participant"; const sess = usePrefs((st) => st.session); const appl = isGated(sess) && isP; const nav = navFor(role, rbac).filter((n) => !appl || ["/app", "/app/status", "/app/help"].includes(n.href));
   const label = (n: { en: string; kn: string }) => (lang === "kn" ? n.kn : n.en);
   const gated = appl && !["/app", "/app/status", "/app/help"].includes(path);
   const allowed = mounted ? canOpen(role, path, rbac) : true;
@@ -107,6 +109,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <div className="min-w-0 flex-1">
         <Offline />
+        {sess?.demo && !isP && <div role="status" className="border-b border-saffron/40 bg-saffron/15 px-3 py-1.5 text-center text-xs text-foreground">{tr("Demo admin preview on sample data. This does not give you real admin rights.", "ಮಾದರಿ ಡೇಟಾದ ಮೇಲೆ ಡೆಮೊ ಅಡ್ಮಿನ್ ಪೂರ್ವವೀಕ್ಷಣೆ. ಇದು ನಿಜವಾದ ಅಡ್ಮಿನ್ ಹಕ್ಕುಗಳನ್ನು ನೀಡುವುದಿಲ್ಲ.")} <Link href="/choose" className="font-semibold text-primary underline">{tr("Switch interface", "ಇಂಟರ್ಫೇಸ್ ಬದಲಿಸಿ")}</Link></div>}
         <header className="no-print sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/90 px-3 py-2 backdrop-blur md:px-6">
           {!isP && <button aria-label="Menu" className="rounded-full p-2 md:hidden" onClick={() => setDrawer(true)}><Ph.List size={22} /></button>}
           <Link href="/" className={cn("font-bold text-primary md:hidden", !isP && "hidden sm:block")}>{t.appName}</Link>

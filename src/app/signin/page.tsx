@@ -10,6 +10,7 @@ import { homeFor } from "@/lib/nav";
 import { RBAC_ROLES } from "@/lib/rbac";
 import { signInResult, last10, maskPhone, type SignInResult } from "@/lib/session";
 import { usePrefs } from "@/lib/store";
+import { INSTANT_ACCESS } from "@/lib/config";
 import { useT } from "@/lib/useT";
 import { toast } from "sonner";
 
@@ -30,7 +31,7 @@ export default function SignIn() {
     if (!r.ok && r.reason === "not-found") {
       // Registered but not yet approved: no account exists, so match the pending application instead.
       const db = useDb.getState(); const app = db.applications.find((x) => last10(x.phone).length === 10 && last10(x.phone) === last10(phone));
-      if (app) { db.patch((d) => { d.myApplicationId = app.id; }); signIn({ userId: `NEW-${last10(phone).slice(-4)}`, name: app.name, role: "participant", phoneMasked: maskPhone(phone), phone, applicant: true }); toast.success(tr(`Signed in as ${app.name}`, `${app.name} ಆಗಿ ಸೈನ್ ಇನ್ ಆಗಿದೆ`)); router.push("/app"); return; }
+      if (app) { db.patch((d) => { d.myApplicationId = app.id; }); signIn({ userId: `NEW-${last10(phone).slice(-4)}`, name: app.name, role: "participant", phoneMasked: maskPhone(phone), phone, applicant: true, demo: INSTANT_ACCESS }); toast.success(tr(`Signed in as ${app.name}`, `${app.name} ಆಗಿ ಸೈನ್ ಇನ್ ಆಗಿದೆ`)); router.push(INSTANT_ACCESS ? "/choose" : "/app"); return; }
     }
     if (!r.ok) { setDenied(r); setStep("denied"); return; }
     signIn(r.session); toast.success(tr(`Signed in as ${r.session.name}`, `${r.session.name} ಆಗಿ ಸೈನ್ ಇನ್ ಆಗಿದೆ`)); router.push(homeFor(r.session.role));

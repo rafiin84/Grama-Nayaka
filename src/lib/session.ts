@@ -1,8 +1,11 @@
 import type { Role, User } from "./types";
 import { trainers } from "./seed";
+import { INSTANT_ACCESS } from "./config";
 
 /** A signed-in person. Created only after the mobile number has been verified with a one-time code. */
-export interface Session { userId: string; name: string; role: Role; phoneMasked: string; phone?: string; participantId?: string; trainerId?: string; applicant?: boolean }
+export interface Session { userId: string; name: string; role: Role; phoneMasked: string; phone?: string; participantId?: string; trainerId?: string; applicant?: boolean; demo?: boolean }
+/** An applicant is held back from volunteer pages only while approval is required. */
+export const isGated = (s: Session | null | undefined, instant = INSTANT_ACCESS) => !!s?.applicant && !instant;
 export const last10 = (p: string) => p.replace(/\D/g, "").slice(-10);
 export const maskPhone = (p: string) => `•••••• ${last10(p).slice(-4)}`;
 

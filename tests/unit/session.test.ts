@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { last10, maskPhone, roleForUser, signInResult } from "@/lib/session";
+import { isGated, last10, maskPhone, roleForUser, signInResult } from "@/lib/session";
 import { users } from "@/lib/seed";
 import type { User } from "@/lib/types";
+
+describe("applicant gate", () => {
+  const applicant = { userId: "NEW-1", name: "A", role: "participant" as const, phoneMasked: "", applicant: true };
+  it("holds applicants back only while approval is required", () => { expect(isGated(applicant, false)).toBe(true); expect(isGated(applicant, true)).toBe(false); });
+  it("never gates approved people or signed-out visitors", () => { expect(isGated({ ...applicant, applicant: false }, false)).toBe(false); expect(isGated(null, false)).toBe(false); });
+});
 
 describe("sign-in", () => {
   it("normalises phone numbers and masks all but the last four digits", () => { expect(last10("+91 9000001102")).toBe("9000001102"); expect(last10("90000 01102")).toBe("9000001102"); expect(maskPhone("+91 9000001102")).toBe("•••••• 1102"); expect(maskPhone("+91 9000001102")).not.toContain("9000"); });

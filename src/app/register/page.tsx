@@ -9,6 +9,7 @@ import { MOCK_OTP, NOTICE_VERSION, purposes } from "@/lib/consent";
 import { api } from "@/lib/api";
 import { usePrefs } from "@/lib/store";
 import { maskPhone } from "@/lib/session";
+import { INSTANT_ACCESS } from "@/lib/config";
 
 export default function Register() {
   const { tr, lang } = useT(); const router = useRouter();
@@ -27,7 +28,7 @@ export default function Register() {
     if (expired) return setErr(tr("This code has expired. Request a new one.", "ಈ ಕೋಡ್ ಅವಧಿ ಮುಗಿದಿದೆ. ಹೊಸದನ್ನು ಕೇಳಿ."));
     if (otp !== MOCK_OTP) { const n = tries + 1; setTries(n); setOtp(""); return setErr(n >= 3 ? tr("Too many wrong attempts. Please wait and try later (demo rate limit).", "ತುಂಬಾ ತಪ್ಪು ಪ್ರಯತ್ನಗಳು. ನಂತರ ಪ್ರಯತ್ನಿಸಿ (ಡೆಮೊ ಮಿತಿ).") : tr(`Wrong code. ${3 - n} attempts left.`, `ತಪ್ಪು ಕೋಡ್. ${3 - n} ಪ್ರಯತ್ನ ಬಾಕಿ.`)); }
     purposes.forEach((p) => grants[p.id] && api.consent.grant(p.id, "register", lang));
-    signIn({ userId: `NEW-${phone.slice(-4)}`, name: tr("New applicant", "ಹೊಸ ಅರ್ಜಿದಾರ"), role: "participant", phoneMasked: maskPhone(phone), phone, applicant: true }); router.push("/apply");
+    signIn({ userId: `NEW-${phone.slice(-4)}`, name: tr("New applicant", "ಹೊಸ ಅರ್ಜಿದಾರ"), role: "participant", phoneMasked: maskPhone(phone), phone, applicant: true, demo: INSTANT_ACCESS }); router.push(INSTANT_ACCESS ? "/choose" : "/apply");
   };
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
